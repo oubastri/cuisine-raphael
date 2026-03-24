@@ -1,0 +1,10 @@
+{
+  "name": "cuisine-raphael",
+  "private": true,
+  "scripts": {
+    "start": "serve . -l 3456"
+  },
+  "devDependencies": {
+    "serve": "^14.2.4"
+  }
+}

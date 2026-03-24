@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#FAFAF8">
+<title>La Cuisine de Raphaël</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cream:#FAFAF8; --cream2:#F3F1EC; --cream3:#E8E4DC;
+  --ink:#1C1B18; --ink2:#6B6860; --ink3:#A8A59F;
+  --green:#3D5A2A; --green-light:#EEF2E8; --green-mid:#7A9B60;
+  --amber:#7A4F1E; --amber-light:#F5EDE3;
+  --red:#8B2E2E; --red-light:#F5E8E8;
+  --blue:#1A4A7A; --blue-light:#E8F0F8;
+  --r:16px; --rs:10px;
+}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;-webkit-font-smoothing:antialiased;padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+button{font-family:'DM Sans',sans-serif;cursor:pointer;border:none;background:none;-webkit-tap-highlight-color:transparent}
+
+/* SETUP SCREEN */
+.setup-screen{
+  position:fixed;inset:0;z-index:999;
+  background:var(--cream);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:40px 32px;text-align:center;
+}
+.setup-screen.hidden{display:none}
+.setup-logo{
+  font-family:'Cormorant Garamond',serif;
+  font-size:28px;font-weight:400;font-style:italic;
+  color:var(--ink);margin-bottom:6px;line-height:1.2;
+}
+.setup-sub{font-size:11px;font-weight:300;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:40px}
+.setup-q{font-size:15px;font-weight:400;color:var(--ink2);margin-bottom:20px}
+.user-btns{display:flex;flex-direction:column;gap:10px;width:100%;max-width:280px}
+.user-btn{
+  padding:15px 20px;border-radius:var(--r);
+  border:1px solid var(--cream3);background:#fff;
+  display:flex;align-items:center;gap:14px;
+  transition:all .15s;
+}
+.user-btn:active{background:var(--cream2)}
+.user-avatar{
+  width:38px;height:38px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;font-weight:500;flex-shrink:0;
+}
+.user-btn-info{text-align:left}
+.user-btn-name{font-size:15px;font-weight:500;color:var(--ink)}
+.user-btn-role{font-size:12px;font-weight:300;color:var(--ink3)}
+
+/* CONFIG NOTICE */
+.config-notice{
+  background:var(--amber-light);border:1px solid rgba(122,79,30,0.2);
+  border-radius:var(--rs);padding:14px 16px;margin:0 16px 16px;
+  font-size:12px;color:var(--amber);line-height:1.6;
+}
+.config-notice b{font-weight:500}
+.config-notice code{
+  font-family:monospace;font-size:11px;
+  background:rgba(122,79,30,0.1);padding:1px 5px;border-radius:4px;
+}
+
+/* HEADER */
+.header{
+  position:sticky;top:0;z-index:200;
+  background:rgba(250,250,248,0.92);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--cream3);
+  padding:0 16px;padding-top:env(safe-area-inset-top);
+}
+.header-inner{max-width:680px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:58px}
+.brand{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:400;font-style:italic;color:var(--ink);line-height:1.1}
+.brand-sub{font-family:'DM Sans',sans-serif;font-style:normal;font-size:10px;font-weight:300;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink3);margin-top:1px;display:block}
+.header-right{display:flex;align-items:center;gap:8px}
+.progress-pill{display:flex;align-items:center;gap:6px;background:var(--cream2);border:1px solid var(--cream3);border-radius:100px;padding:5px 10px 5px 7px;font-size:12px;font-weight:400;color:var(--ink2)}
+.pill-dot{width:6px;height:6px;border-radius:50%;background:var(--green-mid)}
+.user-chip{
+  display:flex;align-items:center;gap:5px;
+  border:1px solid var(--cream3);background:var(--cream2);
+  border-radius:100px;padding:5px 10px;
+  font-size:12px;color:var(--ink2);cursor:pointer;
+}
+.user-chip-av{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:500}
+
+/* SYNC STATUS */
+.sync-bar{
+  background:var(--blue-light);border-bottom:1px solid rgba(26,74,122,0.15);
+  padding:6px 16px;font-size:11px;color:var(--blue);
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  max-height:32px;overflow:hidden;transition:max-height .3s,opacity .3s;
+}
+.sync-bar.hidden{max-height:0;opacity:0;border:none;padding:0}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* TABS */
+.tabs{
+  background:rgba(250,250,248,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--cream3);padding:0 16px;
+  position:sticky;top:calc(58px + env(safe-area-inset-top));z-index:100;
+}
+.tabs-inner{max-width:680px;margin:0 auto;display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs-inner::-webkit-scrollbar{display:none}
+.tab-btn{padding:13px 14px 11px;font-size:13px;font-weight:400;color:var(--ink3);border-bottom:2px solid transparent;white-space:nowrap;flex-shrink:0;transition:color .15s,border-color .15s}
+.tab-btn.active{color:var(--ink);font-weight:500;border-bottom-color:var(--ink)}
+
+/* MAIN */
+.main{max-width:680px;margin:0 auto;padding:0 16px 40px}
+.view{display:none;padding-top:20px;animation:fadeUp .2s ease}
+.view.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* WEEK CHIPS */
+.week-chips{display:flex;gap:7px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;margin-bottom:20px}
+.week-chips::-webkit-scrollbar{display:none}
+.week-chip{flex-shrink:0;padding:7px 14px;border-radius:100px;font-size:13px;font-weight:400;color:var(--ink2);border:1px solid var(--cream3);background:var(--cream2);transition:all .15s;position:relative}
+.week-chip.active{background:var(--ink);color:var(--cream);border-color:var(--ink);font-weight:500}
+.w-dot{position:absolute;top:4px;right:4px;width:5px;height:5px;border-radius:50%;background:var(--green-mid);display:none}
+.week-chip.has-prog .w-dot{display:block}
+.week-chip.active .w-dot{background:rgba(255,255,255,0.5)}
+
+/* WEEK HEADER */
+.week-title{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:400;line-height:1.2;margin-bottom:5px}
+.week-desc{font-size:13px;font-weight:300;color:var(--ink2);line-height:1.65;margin-bottom:12px}
+.allergen-notice{background:var(--amber-light);border:1px solid rgba(122,79,30,0.15);border-radius:var(--rs);padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--amber);line-height:1.55}
+.allergen-notice b{font-weight:500}
+.week-prog-wrap{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.prog-track{flex:1;height:3px;background:var(--cream3);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:var(--green-mid);border-radius:2px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+.prog-label{font-size:11px;color:var(--ink3);white-space:nowrap}
+
+/* DAY CARDS */
+.day-card{background:#fff;border:1px solid var(--cream3);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.day-card.done{border-color:rgba(61,90,42,0.22);background:#FDFDF9}
+.day-header{display:flex;align-items:center;padding:14px 15px;gap:12px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+.check-circle{width:26px;height:26px;border-radius:50%;flex-shrink:0;border:1.5px solid var(--cream3);background:#fff;display:flex;align-items:center;justify-content:center;transition:all .2s cubic-bezier(.4,0,.2,1)}
+.check-circle svg{opacity:0;transition:all .15s;transform:scale(0.7)}
+.day-card.done .check-circle{background:var(--green);border-color:var(--green)}
+.day-card.done .check-circle svg{opacity:1;transform:scale(1)}
+.day-meta{flex:1;min-width:0}
+.day-num{font-size:10px;font-weight:400;letter-spacing:0.09em;text-transform:uppercase;color:var(--ink3);margin-bottom:2px}
+.day-card.done .day-num{color:var(--green-mid)}
+.day-label-text{font-size:15px;font-weight:400;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.day-card.done .day-label-text{color:var(--ink2)}
+.day-badges{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;align-items:center}
+.badge{display:inline-block;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:500}
+.b-new{background:var(--green-light);color:var(--green)}
+.b-allergy{background:var(--amber-light);color:var(--amber)}
+/* WHO checked it */
+.by-badge{
+  display:inline-flex;align-items:center;gap:3px;
+  padding:2px 7px;border-radius:100px;font-size:10px;font-weight:400;
+  border:1px solid var(--cream3);background:var(--cream2);color:var(--ink2);
+}
+.by-av{width:12px;height:12px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7px;font-weight:600}
+.chev{color:var(--ink3);font-size:11px;flex-shrink:0;transition:transform .2s cubic-bezier(.4,0,.2,1)}
+.day-card.open .chev{transform:rotate(180deg)}
+
+/* DAY BODY */
+.day-body{display:none;border-top:1px solid var(--cream2)}
+.day-card.open .day-body{display:block}
+.meal-block{padding:15px 15px;border-bottom:1px solid var(--cream2)}
+.meal-block:last-child{border-bottom:none;padding-bottom:0}
+.meal-time-label{font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
+.meal-name-text{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:400;color:var(--ink);margin-bottom:3px;line-height:1.2}
+.meal-qty-text{font-size:12px;color:var(--ink2);margin-bottom:10px;font-weight:300}
+.acc{margin-bottom:6px}
+.acc-btn{display:flex;align-items:center;justify-content:space-between;width:100%;padding:10px 12px;border-radius:var(--rs);background:var(--cream2);font-size:12px;font-weight:400;color:var(--ink2);transition:background .12s}
+.acc-btn:active{background:var(--cream3)}
+.acc-chev{font-size:10px;color:var(--ink3);transition:transform .18s}
+.acc.open .acc-chev{transform:rotate(180deg)}
+.acc-content{display:none;padding:10px 12px 12px;background:var(--cream2);border-radius:0 0 var(--rs) var(--rs);margin-top:-4px;font-size:13px;font-weight:300;color:var(--ink2);line-height:1.7}
+.acc.open .acc-content{display:block}
+.acc-content strong{font-weight:500;color:var(--ink)}
+.acc-content em{font-style:italic}
+.acc-storage .acc-btn{background:var(--green-light);color:var(--green)}
+.acc-storage .acc-content{background:var(--green-light)}
+
+/* COMPLETE BTN */
+.complete-btn{
+  margin:12px 15px 15px;width:calc(100% - 30px);
+  padding:13px 16px;border-radius:var(--rs);font-size:14px;font-weight:500;
+  background:var(--ink);color:var(--cream);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:opacity .12s,transform .12s;
+}
+.complete-btn:active{opacity:0.85;transform:scale(0.98)}
+.complete-btn.is-done{background:var(--cream2);color:var(--ink2);font-size:12px;font-weight:400}
+
+/* ALLERGEN VIEW */
+.view-title{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:400;margin-bottom:6px}
+.view-sub{font-size:13px;font-weight:300;color:var(--ink2);line-height:1.65;margin-bottom:20px}
+.a-card{background:#fff;border:1px solid var(--cream3);border-radius:var(--r);padding:16px;margin-bottom:10px}
+.a-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:9px}
+.a-name{font-size:15px;font-weight:500;color:var(--ink)}
+.a-wk{font-size:11px;font-weight:300;color:var(--ink3);margin-top:2px}
+.a-priority{padding:3px 9px;border-radius:100px;font-size:10px;font-weight:500;flex-shrink:0}
+.p-hi{background:var(--amber-light);color:var(--amber)}
+.p-md{background:var(--cream2);color:var(--ink2)}
+.a-row{display:flex;gap:7px;margin-bottom:6px;font-size:13px;font-weight:300;line-height:1.6}
+.a-row:last-child{margin-bottom:0}
+.a-row b{font-weight:500;color:var(--ink);flex-shrink:0}
+.a-row span{color:var(--ink2)}
+
+/* STORAGE VIEW */
+.s-card{background:#fff;border:1px solid var(--cream3);border-radius:var(--r);padding:16px;margin-bottom:10px}
+.s-card-title{font-size:14px;font-weight:500;color:var(--ink);margin-bottom:11px;display:flex;align-items:center;gap:9px}
+.s-icon{width:27px;height:27px;border-radius:8px;background:var(--cream2);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.s-item{padding:8px 0;border-bottom:1px solid var(--cream2);font-size:13px;font-weight:300;color:var(--ink2);line-height:1.55}
+.s-item:last-child{border-bottom:none;padding-bottom:0}
+.s-item strong{font-weight:500;color:var(--ink)}
+
+/* PROGRESS VIEW */
+.overview-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--cream3);border-radius:var(--r);overflow:hidden;margin-bottom:20px}
+.ov-cell{background:#fff;padding:16px 10px;text-align:center}
+.ov-val{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;color:var(--ink);line-height:1}
+.ov-lbl{font-size:10px;color:var(--ink3);margin-top:4px;letter-spacing:0.07em;text-transform:uppercase}
+.wk-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--cream2)}
+.wk-row:last-child{border-bottom:none}
+.wk-lbl{font-size:13px;font-weight:400;color:var(--ink);width:52px;flex-shrink:0}
+.wk-track{flex:1;height:4px;background:var(--cream3);border-radius:2px;overflow:hidden}
+.wk-fill{height:100%;background:var(--green-mid);border-radius:2px;transition:width .4s}
+.wk-count{font-size:11px;color:var(--ink3);width:30px;text-align:right;flex-shrink:0}
+
+/* WHO DID WHAT */
+.family-section{margin-bottom:20px}
+.family-title{font-size:13px;font-weight:500;color:var(--ink);margin-bottom:10px}
+.family-row{display:flex;align-items:center;gap:10px;padding:11px 14px;background:#fff;border:1px solid var(--cream3);border-radius:var(--rs);margin-bottom:7px}
+.fam-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0}
+.fam-name{font-size:13px;font-weight:500;color:var(--ink);flex:1}
+.fam-count{font-size:12px;color:var(--ink3)}
+
+.reset-btn{display:block;width:100%;margin-top:16px;padding:13px;border-radius:var(--rs);font-size:13px;font-weight:400;color:var(--red);border:1px solid rgba(139,46,46,0.2);background:var(--red-light);transition:opacity .12s}
+.reset-btn:active{opacity:0.7}
+
+/* TOAST */
+.toast{position:fixed;bottom:calc(28px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(16px);background:var(--ink);color:var(--cream);padding:10px 20px;border-radius:100px;font-size:13px;font-weight:400;opacity:0;transition:all .28s cubic-bezier(.4,0,.2,1);pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div class="setup-screen" id="setup-screen">
+  <div class="setup-logo">La Cuisine de Raphaël</div>
+  <div class="setup-sub">8-Week Solids Plan</div>
+  <div class="setup-q">Who's checking in?</div>
+  <div class="user-btns">
+    <button class="user-btn" onclick="setUser('alex')">
+      <div class="user-avatar" style="background:#E8F0E8;color:#3D5A2A">A</div>
+      <div class="user-btn-info">
+        <div class="user-btn-name">Papa (Alex)</div>
+      </div>
+    </button>
+    <button class="user-btn" onclick="setUser('wife')">
+      <div class="user-avatar" style="background:#F5EDE3;color:#7A4F1E">J</div>
+      <div class="user-btn-info">
+        <div class="user-btn-name">Maman (Jenny Drew)</div>
+      </div>
+    </button>
+    <button class="user-btn" onclick="setUser('grand')">
+      <div class="user-avatar" style="background:#EEE8F5;color:#4A2A7A">E</div>
+      <div class="user-btn-info">
+        <div class="user-btn-name">Yaya (Elkin)</div>
+      </div>
+    </button>
+  </div>
+</div>
+
+<!-- SYNC BAR -->
+<div class="sync-bar hidden" id="sync-bar">
+  <div class="sync-dot"></div>
+  <span id="sync-msg">Syncing…</span>
+</div>
+
+<!-- CONFIG NOTICE (shown if Supabase not configured) -->
+<div class="config-notice hidden" id="config-notice">
+  <b>One-time setup needed</b> — copy <code>config.example.js</code> to <code>config.js</code>, then set your Supabase <b>Project URL</b> and <b>anon</b> key (Project Settings → API). Restart the local server and refresh.
+</div>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="brand">
+      La Cuisine de Raphaël
+      <span class="brand-sub">8-Week Solids Plan</span>
+    </div>
+    <div class="header-right">
+      <div class="progress-pill">
+        <div class="pill-dot"></div>
+        <span id="hdr-prog">0 / 56</span>
+      </div>
+      <div class="user-chip" id="user-chip" onclick="switchUser()" title="Switch user">
+        <div class="user-chip-av" id="chip-av"></div>
+        <span id="chip-name"></span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tabs-inner">
+    <button class="tab-btn active" onclick="switchTab('plan')">Plan</button>
+    <button class="tab-btn" onclick="switchTab('allergens')">Allergens</button>
+    <button class="tab-btn" onclick="switchTab('storage')">Storage</button>
+    <button class="tab-btn" onclick="switchTab('progress')">Progress</button>
+  </div>
+</div>
+
+<div class="main">
+  <div id="view-plan" class="view active">
+    <div class="week-chips" id="week-chips"></div>
+    <div id="week-content"></div>
+  </div>
+
+  <div id="view-allergens" class="view">
+    <div class="view-title">Allergen Guide</div>
+    <p class="view-sub">Introduce early and repeatedly — current science shows this is protective. One allergen at a time, mornings only, watch 2 hours. Keep each in weekly rotation once confirmed safe.</p>
+    <div id="allergen-list"></div>
+  </div>
+
+  <div id="view-storage" class="view">
+    <div class="view-title">Storage System</div>
+    <p class="view-sub">The ice cube tray is the foundation. One batch cooking session per week keeps the freezer stocked for 2–3 weeks.</p>
+    <div id="storage-list"></div>
+  </div>
+
+  <div id="view-progress" class="view">
+    <div class="view-title">Raphaël's Progress</div>
+    <p class="view-sub">Every day checked off is a win. You're building one of the most important habits of his life.</p>
+    <div class="overview-grid">
+      <div class="ov-cell"><div class="ov-val" id="ov-done">0</div><div class="ov-lbl">Done</div></div>
+      <div class="ov-cell"><div class="ov-val" id="ov-left">56</div><div class="ov-lbl">Left</div></div>
+      <div class="ov-cell"><div class="ov-val" id="ov-pct">0%</div><div class="ov-lbl">Complete</div></div>
+    </div>
+    <div class="family-section">
+      <div class="family-title">Family contributions</div>
+      <div id="family-rows"></div>
+    </div>
+    <div id="wk-rows"></div>
+    <button class="reset-btn" onclick="confirmReset()">Reset all progress</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+window.RAPHAEL_SUPABASE_URL = 'YOUR_SUPABASE_URL';
+window.RAPHAEL_SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+</script>
+<script src="config.js"></script>
+<script>
+const SUPABASE_URL = window.RAPHAEL_SUPABASE_URL;
+const SUPABASE_KEY = window.RAPHAEL_SUPABASE_ANON_KEY;
+
+const USERS = {
+  alex:  { name:'Papa (Alex)',         initial:'A', bg:'#E8F0E8', color:'#3D5A2A' },
+  wife:  { name:'Maman (Jenny Drew)', initial:'J', bg:'#F5EDE3', color:'#7A4F1E' },
+  grand: { name:'Yaya (Elkin)',       initial:'E', bg:'#EEE8F5', color:'#4A2A7A' },
+};
+
+// completed = { dayId: { done: bool, by: 'alex'|'wife'|'grand', at: isoString } }
+let completed = {};
+let currentWeek = 0;
+let currentUser = null;
+let supabase = null;
+let channel = null;
+
+// ── SUPABASE INIT ──
+const configured =
+  SUPABASE_URL &&
+  SUPABASE_KEY &&
+  SUPABASE_URL !== 'YOUR_SUPABASE_URL' &&
+  SUPABASE_KEY !== 'YOUR_SUPABASE_ANON_KEY';
+
+async function initSupabase() {
+  if (!configured) {
+    document.getElementById('config-notice').classList.remove('hidden');
+    // Fall back to localStorage only
+    completed = JSON.parse(localStorage.getItem('raphael_local') || '{}');
+    return;
+  }
+  try {
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+    supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Load existing data
+    await loadFromSupabase();
+
+    // Subscribe to real-time changes
+    channel = supabase
+      .channel('progress')
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'raphael_progress'
+      }, payload => {
+        handleRealtime(payload);
+      })
+      .subscribe();
+  } catch(e) {
+    console.warn('Supabase init failed, using localStorage', e);
+    completed = JSON.parse(localStorage.getItem('raphael_local') || '{}');
+  }
+}
+
+async function loadFromSupabase() {
+  showSync('Loading…');
+  const { data, error } = await supabase.from('raphael_progress').select('*');
+  if (error) { console.error(error); hideSync(); return; }
+  completed = {};
+  data.forEach(row => {
+    completed[row.day_id] = { done: row.done, by: row.checked_by, at: row.checked_at };
+  });
+  hideSync();
+  refreshAll();
+}
+
+function handleRealtime(payload) {
+  const row = payload.new || payload.old;
+  if (!row) return;
+  if (payload.eventType === 'DELETE' || (payload.new && !payload.new.done)) {
+    completed[row.day_id] = { done: false, by: row.checked_by, at: row.checked_at };
+  } else if (payload.new) {
+    completed[row.new.day_id || row.day_id] = { done: payload.new.done, by: payload.new.checked_by, at: payload.new.checked_at };
+  }
+  showSync(`Updated by ${USERS[row.checked_by]?.name || 'family'}`, 2000);
+  refreshAll();
+}
+
+async function persistToggle(dayId, done) {
+  if (!configured) {
+    // localStorage fallback
+    if (!completed[dayId]) completed[dayId] = {};
+    completed[dayId].done = done;
+    completed[dayId].by = currentUser;
+    completed[dayId].at = new Date().toISOString();
+    localStorage.setItem('raphael_local', JSON.stringify(completed));
+    return;
+  }
+  showSync('Saving…');
+  const { error } = await supabase.from('raphael_progress').upsert({
+    day_id: dayId,
+    done: done,
+    checked_by: currentUser,
+    checked_at: new Date().toISOString(),
+  }, { onConflict: 'day_id' });
+  if (error) console.error('Save error:', error);
+  hideSync();
+}
+
+async function persistReset() {
+  if (!configured) {
+    completed = {};
+    localStorage.removeItem('raphael_local');
+    return;
+  }
+  showSync('Resetting…');
+  await supabase.from('raphael_progress').delete().neq('day_id', '');
+  completed = {};
+  hideSync();
+}
+
+function showSync(msg, autohide) {
+  const bar = document.getElementById('sync-bar');
+  document.getElementById('sync-msg').textContent = msg;
+  bar.classList.remove('hidden');
+  if (autohide) setTimeout(hideSync, autohide);
+}
+function hideSync() {
+  document.getElementById('sync-bar').classList.add('hidden');
+}
+
+// ── USER ──
+function setUser(u) {
+  currentUser = u;
+  localStorage.setItem('raphael_user', u);
+  document.getElementById('setup-screen').classList.add('hidden');
+  updateUserChip();
+  refreshAll();
+}
+
+function switchUser() {
+  document.getElementById('setup-screen').classList.remove('hidden');
+}
+
+function updateUserChip() {
+  const u = USERS[currentUser];
+  if (!u) return;
+  const av = document.getElementById('chip-av');
+  av.textContent = u.initial;
+  av.style.background = u.bg;
+  av.style.color = u.color;
+  document.getElementById('chip-name').textContent = u.name;
+}
+
+// ── STATE HELPERS ──
+function isDone(dayId) { return !!(completed[dayId] && completed[dayId].done); }
+function checkedBy(dayId) { return completed[dayId]?.by || null; }
+function totalDone() { return Object.values(completed).filter(v=>v&&v.done).length; }
+function weekDone(wi) { return WEEKS[wi].days.filter(d=>isDone(d.id)).length; }
+function countByUser(u) { return Object.values(completed).filter(v=>v&&v.done&&v.by===u).length; }
+
+// ── TOGGLE ──
+async function toggleDone(dayId) {
+  const nowDone = !isDone(dayId);
+  if (!completed[dayId]) completed[dayId] = {};
+  completed[dayId].done = nowDone;
+  completed[dayId].by = currentUser;
+  completed[dayId].at = new Date().toISOString();
+  await persistToggle(dayId, nowDone);
+  refreshAll();
+  const c = document.getElementById('dc-'+dayId);
+  if (c) c.classList.add('open');
+  showToast(nowDone ? 'Day complete ✓' : 'Marked incomplete');
+}
+
+function refreshAll() {
+  updateHeader();
+  refreshChips();
+  renderWeek();
+  updateProgress();
+}
+
+// ── HEADER ──
+function updateHeader() {
+  document.getElementById('hdr-prog').textContent = `${totalDone()} / 56`;
+}
+
+// ── CHIPS ──
+function renderChips() {
+  const c = document.getElementById('week-chips');
+  c.innerHTML = WEEKS.map((w,i) => `
+    <button class="week-chip${i===0?' active':''}" id="chip-${i}" onclick="selectWeek(${i})">
+      Week ${w.num}<span class="w-dot"></span>
+    </button>`).join('');
+  refreshChips();
+}
+
+function refreshChips() {
+  WEEKS.forEach((_,i) => {
+    const ch = document.getElementById('chip-'+i);
+    if (!ch) return;
+    ch.classList.toggle('active', i===currentWeek);
+    ch.classList.toggle('has-prog', weekDone(i) > 0);
+  });
+}
+
+function selectWeek(i) {
+  currentWeek = i;
+  refreshChips();
+  renderWeek();
+  const ch = document.getElementById('chip-'+i);
+  if (ch) ch.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+}
+
+// ── WEEK RENDER ──
+function byBadge(dayId) {
+  const u = checkedBy(dayId);
+  if (!u || !isDone(dayId)) return '';
+  const info = USERS[u];
+  if (!info) return '';
+  return `<span class="by-badge"><span class="by-av" style="background:${info.bg};color:${info.color}">${info.initial}</span>${info.name}</span>`;
+}
+
+function renderWeek() {
+  const w = WEEKS[currentWeek];
+  const done = weekDone(currentWeek);
+  const total = w.days.length;
+  const pct = Math.round(done/total*100);
+
+  let html = `
+    <div class="week-title">${w.title}</div>
+    <div class="week-desc">${w.desc}</div>
+    ${w.allergen ? `<div class="allergen-notice"><b>New allergen this week:</b> ${w.allergen} — introduce on a morning you're home. Watch for 2 hours.</div>` : ''}
+    <div class="week-prog-wrap">
+      <div class="prog-track"><div class="prog-fill" style="width:${pct}%"></div></div>
+      <div class="prog-label">${done}/${total}</div>
+    </div>`;
+
+  w.days.forEach(day => {
+    const done = isDone(day.id);
+    const badges = [
+      day.newFood ? '<span class="badge b-new">New food</span>' : '',
+      day.allergen ? `<span class="badge b-allergy">${day.allergen}</span>` : '',
+      byBadge(day.id),
+    ].filter(Boolean).join('');
+
+    let mealsHtml = '';
+    day.meals.forEach((m, mi) => {
+      const mid = `${day.id}_${mi}`;
+      mealsHtml += `
+        <div class="meal-block">
+          <div class="meal-time-label">${m.time}</div>
+          <div class="meal-name-text">${m.name}</div>
+          <div class="meal-qty-text">${m.qty}</div>
+          <div class="acc" id="a-rec-${mid}">
+            <button class="acc-btn" onclick="toggleAcc('a-rec-${mid}')">Recipe &amp; method <span class="acc-chev">▾</span></button>
+            <div class="acc-content">${m.recipe}</div>
+          </div>
+          <div class="acc acc-storage" id="a-sto-${mid}">
+            <button class="acc-btn" onclick="toggleAcc('a-sto-${mid}')">Storage notes <span class="acc-chev">▾</span></button>
+            <div class="acc-content">${m.storage}</div>
+          </div>
+        </div>`;
+    });
+
+    html += `
+      <div class="day-card${done?' done':''}" id="dc-${day.id}">
+        <div class="day-header" onclick="toggleCard('${day.id}')">
+          <div class="check-circle" onclick="event.stopPropagation();toggleDone('${day.id}')">
+            <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+              <path d="M1 4.5L4.5 8L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="day-meta">
+            <div class="day-num">${day.day}</div>
+            <div class="day-label-text">${day.label}</div>
+            ${badges ? `<div class="day-badges">${badges}</div>` : ''}
+          </div>
+          <div class="chev">▾</div>
+        </div>
+        <div class="day-body" id="db-${day.id}">
+          ${mealsHtml}
+          <button class="complete-btn${done?' is-done':''}" onclick="toggleDone('${day.id}')">
+            ${done
+              ? 'Completed · tap to undo'
+              : `<svg width="14" height="11" viewBox="0 0 14 11" fill="none"><path d="M1.5 5.5L5.5 9.5L12.5 1.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Mark day complete`}
+          </button>
+        </div>
+      </div>`;
+  });
+
+  document.getElementById('week-content').innerHTML = html;
+}
+
+function toggleCard(id) { document.getElementById('dc-'+id)?.classList.toggle('open'); }
+function toggleAcc(id) { document.getElementById(id)?.classList.toggle('open'); }
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── TAB ──
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelector(`[onclick="switchTab('${name}')"]`).classList.add('active');
+  document.getElementById('view-'+name).classList.add('active');
+  if (name === 'progress') updateProgress();
+}
+
+// ── PROGRESS ──
+function updateProgress() {
+  const done = totalDone(), left = 56-done, pct = Math.round(done/56*100);
+  const g = id => document.getElementById(id);
+  if (g('ov-done')) g('ov-done').textContent = done;
+  if (g('ov-left')) g('ov-left').textContent = left;
+  if (g('ov-pct')) g('ov-pct').textContent = pct+'%';
+
+  // Family rows
+  const fam = g('family-rows');
+  if (fam) {
+    fam.innerHTML = Object.entries(USERS).map(([key, u]) => {
+      const n = countByUser(key);
+      return `<div class="family-row">
+        <div class="fam-av" style="background:${u.bg};color:${u.color}">${u.initial}</div>
+        <div class="fam-name">${u.name}</div>
+        <div class="fam-count">${n} day${n!==1?'s':''} checked</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Week rows
+  const rows = g('wk-rows');
+  if (rows) {
+    rows.innerHTML = WEEKS.map((w,i) => {
+      const d = weekDone(i), t = w.days.length, p = Math.round(d/t*100);
+      return `<div class="wk-row">
+        <div class="wk-lbl">Week ${w.num}</div>
+        <div class="wk-track"><div class="wk-fill" style="width:${p}%"></div></div>
+        <div class="wk-count">${d}/${t}</div>
+      </div>`;
+    }).join('');
+  }
+}
+
+// ── RESET ──
+async function confirmReset() {
+  if (confirm("Reset all of Raphaël's progress? This cannot be undone.")) {
+    await persistReset();
+    refreshAll();
+    showToast('Progress reset');
+  }
+}
+
+// ── STATIC RENDERS ──
+function renderAllergens() {
+  document.getElementById('allergen-list').innerHTML = ALLERGENS.map(a => `
+    <div class="a-card">
+      <div class="a-card-top">
+        <div><div class="a-name">${a.name}</div><div class="a-wk">${a.week}</div></div>
+        <span class="a-priority ${a.priority==='high'?'p-hi':'p-md'}">${a.priority==='high'?'High priority':'Standard'}</span>
+      </div>
+      <div class="a-row"><b>How:</b><span>${a.how}</span></div>
+      <div class="a-row"><b>Maintain:</b><span>${a.maintain}</span></div>
+    </div>`).join('');
+}
+
+function renderStorage() {
+  document.getElementById('storage-list').innerHTML = STORAGE.map(s => `
+    <div class="s-card">
+      <div class="s-card-title"><div class="s-icon">${s.icon}</div>${s.title}</div>
+      ${s.items.map(item => `<div class="s-item">${item}</div>`).join('')}
+    </div>`).join('');
+}
+
+// ── DATA ──
+const WEEKS=[
+  {num:1,title:"Week 1 — First Tastes",desc:"Once a day, mid-morning. 1–2 tsp per session. All purées very smooth. Building on the bone broth and banana he already loves.",allergen:null,
+   days:[
+    {id:"w1d1",day:"Day 1",label:"Egg yolk",newFood:true,allergen:"Egg (yolk only)",meals:[
+      {time:"Mid-morning · 9–10am",name:"Soft egg yolk in butter",qty:"1 tsp — roughly ¼ of one yolk",
+       recipe:"Bring a small pot of water to a gentle boil. Lower 1 egg in, cook exactly <strong>6 minutes</strong>. Transfer to ice water for 2 min. Peel, remove yolk only. Mash yolk with ¼ tsp grass-fed butter until smooth. Add a splash of breast milk or bone broth to thin to yogurt consistency.<br><br><strong>Why this first:</strong> Egg yolk — choline for brain development, fat-soluble vitamins, easy protein. Yolk before white reduces allergen risk.",
+       storage:"Make fresh. Yolk oxidises quickly."}
+    ]},
+    {id:"w1d2",day:"Day 2",label:"Egg yolk again",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Soft egg yolk in butter",qty:"1–2 tsp",
+       recipe:"Same as Day 1. Try a little more if he took it well yesterday.",
+       storage:"Make fresh."}
+    ]},
+    {id:"w1d3",day:"Day 3",label:"Egg yolk + bone broth",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Egg yolk, then warm broth sip",qty:"2 tsp yolk + 1–2 tbsp broth",
+       recipe:"Egg yolk as before. Follow with a small cup of warm bone broth. Anchors the experience in warmth and depth.<br><br><strong>Broth reminder:</strong> Simmer bones (chicken feet, marrow, knuckles) with a splash of apple cider vinegar 12–24 hrs. Strain, keep the fat. Freeze in ice cube trays.",
+       storage:"Broth cubes: 3 months frozen. Warm gently in a small pot — never microwave."}
+    ]},
+    {id:"w1d4",day:"Day 4",label:"Roasted sweet potato",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning",name:"Roasted sweet potato with butter",qty:"1–2 tsp",
+       recipe:"Cut 1 small sweet potato in half, rub with butter, place face-down on a baking tray. Roast at <strong>400°F / 200°C for 35–40 min</strong>. Scoop flesh, blend with 1 tsp butter and enough broth to reach thin yogurt consistency.<br><br><strong>Why roast:</strong> Caramelises natural sugars, concentrates flavour. More complex, less watery than boiling.",
+       storage:"Freeze in ice cube trays. Each cube ≈ 1 tbsp. Label and date. <strong>3 months frozen.</strong>"}
+    ]},
+    {id:"w1d5",day:"Day 5",label:"Sweet potato again",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Sweet potato purée",qty:"2 tsp, working toward 1 tbsp",
+       recipe:"Thaw a cube overnight. Warm in a small pot, stir, test on inner wrist before serving.",
+       storage:"Frozen cube — already made."}
+    ]},
+    {id:"w1d6",day:"Day 6",label:"Banana (his favourite)",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Mashed banana with butter",qty:"1–2 tsp",
+       recipe:"Very ripe banana — lots of brown spots = easier digestion, more sweetness. Mash until no lumps. Work in a tiny knob of soft butter.",
+       storage:"Make fresh. Don't freeze banana purée — goes grey."}
+    ]},
+    {id:"w1d7",day:"Day 7",label:"Chicken liver purée",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning",name:"Liver purée mixed into sweet potato",qty:"½ tsp liver into 1 tsp sweet potato",
+       recipe:"Take <strong>100g fresh chicken livers</strong>. Rinse, pat dry, remove green bits. Sauté in butter on medium-low for 3–4 min per side until just cooked (still slightly pink inside — overcooked tastes harsh). Blend with a little broth until completely smooth.<br><br><strong>Why liver:</strong> Most nutrient-dense food on earth. Heme iron, vitamin A, B12, folate. Tiny amounts make a real difference.",
+       storage:"Freeze in ½-tsp portions on silicone mat, transfer to bag. <strong>2 months.</strong> Use 1–2x per week."}
+    ]},
+  ]},
+  {num:2,title:"Week 2 — Building Variety",desc:"Continue once a day. Increase toward 1–2 tbsp per session. Mix foods freely — you can combine anything already introduced.",allergen:"Whole egg introduced this week",
+   days:[
+    {id:"w2d1",day:"Day 8",label:"Egg yolk + sweet potato",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Egg yolk mashed into sweet potato",qty:"1 tbsp combined",
+       recipe:"Mash a cooked yolk into a thawed cube of sweet potato. Warm together. Fat + vegetable dramatically improves absorption of fat-soluble vitamins.",
+       storage:"Frozen sweet potato cube + fresh yolk."}
+    ]},
+    {id:"w2d2",day:"Day 9",label:"Avocado",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning",name:"Mashed avocado with bone broth",qty:"1–2 tsp",
+       recipe:"Scoop ¼ of a ripe avocado. Mash until smooth. Thin with bone broth if needed. Drop of lemon to slow browning. Oleic acid supports brain development and helps absorb other nutrients.",
+       storage:"Best fresh. Refrigerate leftovers pressed with plastic wrap up to 24 hours."}
+    ]},
+    {id:"w2d3",day:"Day 10",label:"Roasted carrot",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning",name:"Roasted carrot purée with ghee",qty:"1–2 tbsp",
+       recipe:"Peel and chop 3–4 carrots. Toss with ghee. Roast at <strong>400°F for 25–30 min</strong> until very soft. Blend with broth, finish with more ghee.",
+       storage:"Freeze in ice cube trays. <strong>3 months.</strong>"}
+    ]},
+    {id:"w2d4",day:"Day 11",label:"Whole egg",newFood:true,allergen:"Whole egg — egg white included",meals:[
+      {time:"Mid-morning — stay home, watch 2 hrs",name:"Soft scrambled whole egg",qty:"½ egg",
+       recipe:"Whisk 1 egg. Melt ½ tsp butter in a pan on <strong>very low heat</strong>. Move slowly and continuously — barely-set, custard-like. Remove from heat while slightly wet.<br><br><strong>Allergen note:</strong> First egg white exposure. Watch for: hives, vomiting, swelling. Rash only around mouth = usually contact irritation, not true allergy.",
+       storage:"Make fresh."}
+    ]},
+    {id:"w2d5",day:"Day 12",label:"Egg + avocado",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Scrambled egg with avocado",qty:"½ egg + 1 tsp avocado",
+       recipe:"Scrambled egg alongside a small mash of avocado. Mix or alternate spoonfuls — both excellent fats.",
+       storage:"Fresh."}
+    ]},
+    {id:"w2d6",day:"Day 13",label:"Slow-cooked beef",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning",name:"Beef purée — rich and fatty",qty:"1–2 tsp",
+       recipe:"Fatty cut — <strong>short rib or chuck</strong>. No salt. Slow cook in bone broth on low for <strong>6–8 hours</strong>. Blend with cooking liquid to smooth purée. Keep the fat.",
+       storage:"Freeze in cubes. <strong>3 months.</strong> Most versatile item in the freezer."}
+    ]},
+    {id:"w2d7",day:"Day 14",label:"Free mix day",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Your choice from the full roster",qty:"1–2 tbsp",
+       recipe:"Mix and match what you have frozen. Good combo: beef cube + sweet potato cube. Or egg yolk into avocado. Notice what he opens his mouth for most enthusiastically.",
+       storage:"Work through frozen stock."}
+    ]},
+  ]},
+  {num:3,title:"Week 3 — Peanut & Fish",desc:"Peanut is the most critical allergen to introduce early — the research here is very clear. Do it on a morning when you're home with no plans for 2 hours.",allergen:"Peanut (highest priority) + Fish (sardine)",
+   days:[
+    {id:"w3d1",day:"Day 15",label:"Peanut introduction",newFood:true,allergen:"Peanut",meals:[
+      {time:"Mid-morning — clear 2 hours, stay home",name:"Thinned peanut butter",qty:"¼ tsp thinned completely",
+       recipe:"Smooth, natural peanut butter — no sugar or salt, just peanuts. Mix <strong>¼ tsp with 2–3 tsp warm water or breast milk</strong> until it pours off a spoon. Thick nut butter is a choking risk; thinned is not.<br><br><strong>Watch for:</strong> hives, vomiting, wheezing, swelling of face/lips/tongue. Call 911 if breathing is affected.",
+       storage:"Fresh. 30 seconds to make."}
+    ]},
+    {id:"w3d2",day:"Day 16",label:"Peanut day 2",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Thinned peanut butter",qty:"¼–½ tsp thinned",
+       recipe:"Same preparation. Peanut needs <strong>at least 3× per week</strong> going forward to maintain tolerance.",
+       storage:"Fresh."}
+    ]},
+    {id:"w3d3",day:"Day 17",label:"Sardines",newFood:true,allergen:"Fish",meals:[
+      {time:"Mid-morning",name:"Sardine purée with lemon and butter",qty:"1 tsp",
+       recipe:"Sardines canned in water or olive oil — no added salt or rinse well. Mash with a fork, tiny squeeze of lemon, ½ tsp butter. Blend smoother if needed. <strong>Mix into sweet potato or avocado.</strong><br><br>Omega-3s, vitamin D, calcium from soft bones — oily fish twice a week is a cornerstone of ancestral infant feeding.",
+       storage:"Use immediately or refrigerate up to 24 hours. Don't freeze once opened."}
+    ]},
+    {id:"w3d4",day:"Day 18",label:"Peanut + banana",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Peanut butter mashed into banana",qty:"¼ tsp PB thinned + 1 tsp banana",
+       recipe:"Mix thinned peanut butter into mashed banana. A combination he'll love. Natural way to keep peanut in regular rotation.",
+       storage:"Fresh."}
+    ]},
+    {id:"w3d5",day:"Day 19",label:"Roasted parsnip",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning",name:"Roasted parsnip with butter and cinnamon",qty:"1–2 tbsp",
+       recipe:"Peel and cube 2 parsnips. Toss in butter. Roast at 400°F for 30 min. Blend with broth. Tiny pinch of cinnamon — a great moment to start warm spices. Ancestral diets across the Middle East and North Africa have always spiced baby food.",
+       storage:"Freeze in cubes. 3 months."}
+    ]},
+    {id:"w3d6",day:"Day 20",label:"Lamb + liver",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Lamb purée with a smear of liver",qty:"1–2 tbsp lamb + ½ tsp liver",
+       recipe:"Thaw a lamb/beef cube and a liver portion. Warm together. Meat softens the liver's intensity while keeping all the nutrients. 1–2 liver servings per week, always mixed with another meat.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w3d7",day:"Day 21",label:"Consolidation",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Pick from everything so far",qty:"2–3 tbsp",
+       recipe:"Full roster: egg (yolk + whole), sweet potato, carrot, avocado, banana, beef, lamb, liver, sardine, parsnip, peanut. Mix freely. Good plate: scrambled egg + sweet potato cube + smear of peanut butter.",
+       storage:"Work through frozen stock."}
+    ]},
+  ]},
+  {num:4,title:"Week 4 — Tree Nuts & Sesame",desc:"Two more major allergens. Start leaving small soft lumps in purées — he's ready for a little more texture.",allergen:"Almond (tree nut) + Sesame",
+   days:[
+    {id:"w4d1",day:"Day 22",label:"Almond butter",newFood:true,allergen:"Tree nut — almond",meals:[
+      {time:"Mid-morning — watch 2 hrs",name:"Thinned almond butter",qty:"¼ tsp thinned completely",
+       recipe:"Smooth almond butter, no salt or sugar. Thin completely with warm water to pourable consistency — same method as peanut. Never chunky.",
+       storage:"Fresh."}
+    ]},
+    {id:"w4d2",day:"Day 23",label:"Sesame via tahini",newFood:true,allergen:"Sesame",meals:[
+      {time:"Mid-morning — watch 2 hrs",name:"Tahini stirred into sweet potato",qty:"¼ tsp tahini in 1 tbsp sweet potato",
+       recipe:"Tahini (sesame paste) — already smooth, mixes into anything. Stir ¼ tsp into a warm sweet potato cube. Sesame is in the top 9 allergens. Watch 2 hours. <strong>Stir the jar well</strong> before using.",
+       storage:"Fresh prep using frozen sweet potato cube."}
+    ]},
+    {id:"w4d3",day:"Day 24",label:"Butternut squash",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning",name:"Roasted butternut squash with coconut oil and ginger",qty:"2 tbsp",
+       recipe:"Cube ¼ butternut squash, toss in coconut oil. Roast at 400°F for 30–35 min. Blend with a tiny scrape of fresh ginger and broth. Ginger is wonderful for infant digestion — used in Moroccan, Lebanese, and West African traditions.",
+       storage:"Freeze in cubes. 3 months."}
+    ]},
+    {id:"w4d4",day:"Day 25",label:"Chicken thigh",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning",name:"Chicken thigh purée",qty:"1–2 tbsp",
+       recipe:"<strong>Bone-in chicken thigh</strong> — more flavour and fat than breast. Simmer in cold water with a bay leaf for 25–30 min until completely tender. Remove skin and bone, blend with cooking broth until smooth.",
+       storage:"Freeze in cubes. <strong>3 months.</strong> One thigh makes many cubes."}
+    ]},
+    {id:"w4d5",day:"Day 26",label:"Almond + sesame repeat",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Tahini banana with almond butter",qty:"½ tsp tahini in banana + ¼ tsp almond thinned",
+       recipe:"Tahini into mashed banana. Thinned almond butter alongside. Confirming both allergen responses. Both need to stay in weekly rotation.",
+       storage:"Fresh."}
+    ]},
+    {id:"w4d6",day:"Day 27",label:"Roasted beet",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning",name:"Roasted beet with butter",qty:"1–2 tbsp",
+       recipe:"Wrap a small beet in foil with butter. Roast at 400°F for 50–60 min. Peel (skin slides off), blend with butter and broth until very smooth.<br><br>Beautiful deep colour — don't be alarmed if his next nappy is pink. Beets appear in Levantine baby food traditions.",
+       storage:"Freeze in cubes. 3 months."}
+    ]},
+    {id:"w4d7",day:"Day 28",label:"One month — celebrate",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"His favourite combination",qty:"2–3 tbsp",
+       recipe:"Pull his favourite cubes. Great plate: chicken + beet, egg yolk mashed in, smear of tahini-banana. One full month. You've introduced egg, peanut, tree nut, fish, sesame, beef, lamb, liver, and a wide range of vegetables. An exceptional ancestral first month.",
+       storage:"Frozen stock."}
+    ]},
+  ]},
+  {num:5,title:"Week 5 — Dairy & Wheat",desc:"The last two major allergens. Textures can now be lumpier — leave more in the mash than you did in Week 1.",allergen:"Dairy (full-fat yogurt) + Wheat / Gluten",
+   days:[
+    {id:"w5d1",day:"Day 29",label:"Full-fat yogurt",newFood:true,allergen:"Dairy",meals:[
+      {time:"Mid-morning — watch 2 hrs",name:"Whole milk plain yogurt",qty:"1 tsp to start",
+       recipe:"<strong>Whole milk, plain yogurt</strong> — no flavour, no added sugar. Fermentation makes it easier to digest than straight milk. Serve at room temperature — never cold. Mix with banana if he's uncertain about the tang.",
+       storage:"Keep in fridge. Use within the week. Don't freeze yogurt."}
+    ]},
+    {id:"w5d2",day:"Day 30",label:"Yogurt + banana",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Yogurt with mashed banana",qty:"1–2 tbsp",
+       recipe:"Stir ripe mashed banana into yogurt. <strong>No honey before 12 months</strong> — botulism risk.",
+       storage:"Fresh."}
+    ]},
+    {id:"w5d3",day:"Day 31",label:"Wheat — sourdough in broth",newFood:true,allergen:"Wheat / Gluten",meals:[
+      {time:"Mid-morning — watch 2 hrs",name:"Sourdough soaked in bone broth",qty:"Small torn piece, very soft",
+       recipe:"<strong>Real sourdough bread</strong> from a proper bakery — long-fermented. Tear a small piece, soak in warm bone broth until completely soft. Long fermentation pre-digests some gluten — far better than crackers or rice cereal as first wheat exposure.",
+       storage:"Fresh."}
+    ]},
+    {id:"w5d4",day:"Day 32",label:"Wheat day 2 + yogurt",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Soaked sourdough alongside yogurt",qty:"Small soft piece + 1 tbsp yogurt",
+       recipe:"Both allergens confirmed. Dairy and wheat now free to use in rotation.",
+       storage:"Fresh."}
+    ]},
+    {id:"w5d5",day:"Day 33",label:"Salmon",newFood:true,allergen:"Fish — salmon",meals:[
+      {time:"Mid-morning",name:"Poached salmon purée",qty:"1–2 tsp",
+       recipe:"Small piece of <strong>wild salmon</strong>. Simmer gently in water or broth for 8–10 min. Remove skin and bones, blend with butter and broth. Mix into sweet potato or carrot.",
+       storage:"Refrigerate, use within 24 hours. Freeze up to 1 month."}
+    ]},
+    {id:"w5d6",day:"Day 34",label:"Cauliflower + cheddar",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning",name:"Cauliflower purée with grated cheddar",qty:"2 tbsp",
+       recipe:"Steam cauliflower florets very soft (8–10 min). Blend with butter, broth, and a small grating of good cheddar. Dairy confirmed — cheese is fine now.",
+       storage:"Freeze in cubes. 3 months."}
+    ]},
+    {id:"w5d7",day:"Day 35",label:"Texture day — leave lumps",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Lumpier mash — intentional texture",qty:"3–4 tbsp",
+       recipe:"Deliberately mash a thawed cube less smoothly — leave small soft lumps. Texture practice now makes finger foods significantly easier later. His gag reflex is designed for this. Stay calm when he gags.",
+       storage:"Frozen cubes."}
+    ]},
+  ]},
+  {num:6,title:"Week 6 — Soy & Two Meals",desc:"Last major allergen. If he's showing interest, add an early dinner around 5:30pm — small and simple to start.",allergen:"Soy — final of the major 9 allergens",
+   days:[
+    {id:"w6d1",day:"Day 36",label:"Soy introduction",newFood:true,allergen:"Soy",meals:[
+      {time:"Mid-morning — watch 2 hrs",name:"Silken tofu in bone broth",qty:"1 tsp",
+       recipe:"<strong>Soft or silken tofu</strong> — no firm tofu yet. Mash completely smooth, mix with warm bone broth. Or stir a few drops of low-sodium soy sauce into a familiar purée.",
+       storage:"Refrigerate tofu, use within 2 days. Don't freeze."}
+    ]},
+    {id:"w6d2",day:"Day 37",label:"Red lentil purée",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning",name:"Red lentil purée with cumin and butter",qty:"2 tbsp",
+       recipe:"Rinse ¼ cup red lentils. Cook in broth (1:3 ratio) with a pinch of cumin for 15–20 min until completely mushy. Blend until very smooth. Finish with butter. Red lentils need no soaking.<br><br><strong>A deeply ancestral food</strong> across Levantine and North African tradition.",
+       storage:"Freeze in cubes. <strong>3 months.</strong>"}
+    ]},
+    {id:"w6d3",day:"Day 38",label:"Two meals begin",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Egg + vegetable",qty:"2–3 tbsp",
+       recipe:"Morning meal as established.",
+       storage:"Frozen cubes."},
+      {time:"Early dinner · ~5:30pm",name:"Meat purée + vegetable",qty:"1–2 tbsp (smaller to start)",
+       recipe:"Beef or lamb cube + carrot or squash cube. Keep dinner simpler while his system adjusts.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w6d4",day:"Day 39",label:"Spice expansion",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Spiced carrot purée",qty:"2–3 tbsp",
+       recipe:"Thaw carrot cube, warm in pot. Add a tiny pinch of cumin and scrape of fresh ginger. Spices are not allergen risks — they are flavour education. You grew up across Casablanca, Beirut, Paris. Let that palette shape his.",
+       storage:"Frozen cube."},
+      {time:"Dinner",name:"Chicken + cauliflower",qty:"2 tbsp",
+       recipe:"Chicken cube + cauliflower cheddar cube, warmed together.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w6d5",day:"Day 40",label:"Cottage cheese",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning",name:"Cottage cheese with banana",qty:"1–2 tbsp",
+       recipe:"Full-fat cottage cheese. If curds are large, blend smooth. Mix with mashed banana. Great protein and calcium.",
+       storage:"Fridge, use within the week."},
+      {time:"Dinner",name:"Salmon + beet",qty:"2 tbsp",
+       recipe:"Salmon and beet cubes, warmed and mixed. Fatty fish + beet — both anti-inflammatory.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w6d6",day:"Day 41",label:"Fresh papaya",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning",name:"Mashed papaya",qty:"1–2 tbsp",
+       recipe:"Scoop ripe papaya flesh, remove seeds. Mash with a fork — naturally smooth. Contains papain, a digestive enzyme.",
+       storage:"Fresh. Use within a day."},
+      {time:"Dinner",name:"Lentil + beef",qty:"2 tbsp",
+       recipe:"Lentil cube + beef cube. Legume + meat is protein-complete and deeply ancestral.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w6d7",day:"Day 42",label:"Week 6 review",newFood:false,allergen:null,meals:[
+      {time:"Morning + dinner",name:"His favourites from both meals",qty:"3–4 tbsp morning, 2 tbsp dinner",
+       recipe:"All 9 major allergens introduced: egg, peanut, tree nut, fish, dairy, wheat, sesame, soy. Shellfish comes in Week 7. The hardest part is behind you.",
+       storage:"Frozen cubes."}
+    ]},
+  ]},
+  {num:7,title:"Week 7 — Shellfish & Finger Foods",desc:"Last allergen group. Start offering soft finger foods alongside purées. Small, completely soft pieces only.",allergen:"Shellfish — final allergen group",
+   days:[
+    {id:"w7d1",day:"Day 43",label:"Prawn purée",newFood:true,allergen:"Shellfish",meals:[
+      {time:"Mid-morning — watch 2 hrs",name:"Blended prawn with butter",qty:"1 tsp",
+       recipe:"Raw prawns — not pre-cooked with added salt. Peel, devein. Boil 2–3 min until pink. Blend completely smooth with butter and broth. Mix into carrot or sweet potato.",
+       storage:"Fresh. Refrigerate, use within 24 hours."}
+    ]},
+    {id:"w7d2",day:"Day 44",label:"Banana finger food",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Purée + soft banana piece to hold",qty:"Purée as usual + 1–2 banana pieces",
+       recipe:"Cut ripe banana into thick rounds, then halve — C-shape easy to grip. Leave peel on one end as a handle. Let him hold it and mouth it. This is about self-feeding instinct, not eating much.<br><br>Stay close, stay calm. Gagging is normal and protective.",
+       storage:"Fresh."},
+      {time:"Dinner",name:"Meat + veg",qty:"2–3 tbsp",
+       recipe:"Lamb cube + parsnip cube.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w7d3",day:"Day 45",label:"Broccoli — purée + floret",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning",name:"Broccoli both ways",qty:"2 tbsp purée + 1 soft floret",
+       recipe:"Steam until very soft (10–12 min). One floret — stalk as natural handle. Reserve rest: blend with butter and broth. <strong>Offer both forms</strong> — bridges purée to self-feeding.",
+       storage:"Freeze purée cubes. Florets: fresh or fridge 24 hrs max."}
+    ]},
+    {id:"w7d4",day:"Day 46",label:"Self-feeding egg practice",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Pre-loaded spoon handed to him",qty:"½ egg",
+       recipe:"Make soft scrambled egg. <strong>Pre-load a spoon and hand it to him</strong> — let him bring it to his own mouth. Huge for oral motor development. Messy. That's right.",
+       storage:"Fresh."},
+      {time:"Dinner",name:"Lentil + chicken",qty:"2–3 tbsp",
+       recipe:"Lentil cube + chicken cube.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w7d5",day:"Day 47",label:"Poached pear",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning",name:"Poached pear with cinnamon",qty:"2 tbsp",
+       recipe:"Peel and core a ripe pear. Simmer in just enough water for 10 min until very soft. Purée or soft finger food pieces. Tiny pinch of cinnamon. Very easy on the gut.",
+       storage:"Refrigerate 2 days. Or freeze purée cubes."}
+    ]},
+    {id:"w7d6",day:"Day 48",label:"Bone marrow",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning",name:"Roasted bone marrow on sourdough",qty:"¼ tsp marrow",
+       recipe:"Ask your butcher for split marrow bones. Roast at <strong>450°F for 15–20 min</strong> until wobbly. Scoop a tiny amount, serve on broth-soaked sourdough.<br><br>One of the most ancestrally complete foods you can offer — fat-soluble vitamins, collagen precursors, minerals. A truly extraordinary food for a truly extraordinary boy.",
+       storage:"Make fresh when you have bones."},
+      {time:"Dinner",name:"Veg + protein mix",qty:"2–3 tbsp",
+       recipe:"Any combination from the roster.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w7d7",day:"Day 49",label:"Finger food exploration",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Finger food session",qty:"Various soft pieces + small purée",
+       recipe:"Lay out 2–3 soft options: banana piece, broccoli floret, soft pear chunk. Let him explore. Offer purée by spoon alongside. The shift to self-feeding is a long, beautiful overlap.",
+       storage:"Fresh + frozen cubes."},
+      {time:"Dinner",name:"Family-style inspiration",qty:"2–3 tbsp",
+       recipe:"Look at what you're cooking — can you blend a small portion for him? Lamb stew, roast chicken thigh, grilled fish — the answer is almost always yes.",
+       storage:"As appropriate."}
+    ]},
+  ]},
+  {num:8,title:"Week 8 — The Family Table",desc:"Two solid meals daily, moving toward three. Textures get chunkier. The goal: he eats with the family, not in isolation.",allergen:null,
+   days:[
+    {id:"w8d1",day:"Day 50",label:"Morning routine locked in",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Egg + vegetable + something fatty",qty:"3–4 tbsp",
+       recipe:"This should feel like reflex now. Egg, a frozen cube, something with fat — butter, avocado, marrow, salmon. This is the ancestral breakfast pattern, and it's his.",
+       storage:"Frozen cubes."},
+      {time:"Dinner",name:"Protein + veg",qty:"2–3 tbsp",
+       recipe:"Meat cube + vegetable cube. Simple. He's building appetite for morning.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w8d2",day:"Day 51",label:"Green beans",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning",name:"Green beans as finger food",qty:"2–3 beans",
+       recipe:"Trim ends. Blanch in boiling water for <strong>6–8 min</strong> until completely limp. Serve whole — the long shape is easy for him to grip. Good iron source.",
+       storage:"Blanch a batch, refrigerate up to 2 days."},
+      {time:"Dinner",name:"Chicken + squash",qty:"2–3 tbsp",
+       recipe:"Chicken cube + squash cube.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w8d3",day:"Day 52",label:"Chicken liver pâté",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Proper pâté on sourdough",qty:"½–1 tsp on soft sourdough",
+       recipe:"Sauté <strong>100g chicken livers</strong> in 2 tbsp butter with a tiny pinch of thyme. Cook until just done. Blend with cooking butter until smooth. Stir in 1 tbsp more soft butter. A proper pâté. No salt.",
+       storage:"Fridge 3–4 days. Freeze in silicone mat portions — 2 months."},
+      {time:"Dinner",name:"Salmon + lentil",qty:"2–3 tbsp",
+       recipe:"High omega-3 + high iron — one of the best combinations in his rotation.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w8d4",day:"Day 53",label:"Mango",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning",name:"Fresh mango — purée and pieces",qty:"2 tbsp",
+       recipe:"Very ripe mango. Slice cheeks, scoop flesh. Blend for purée or cut into soft pieces for finger food. Natural enzymes, vitamin C (boosts iron absorption), gorgeous flavour. Ancestral across North African and Middle Eastern tradition.",
+       storage:"Fresh. Refrigerate 24 hours max."},
+      {time:"Dinner",name:"Beef + beet",qty:"2–3 tbsp",
+       recipe:"A beautiful dark, rich combination.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w8d5",day:"Day 54",label:"Family dinner",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Standard morning meal",qty:"3–4 tbsp",
+       recipe:"His established routine. He knows what this is now.",
+       storage:"Frozen cubes."},
+      {time:"Family dinner",name:"Adapted version of what you're having",qty:"2–3 tbsp",
+       recipe:"Grilled fish — flake with butter. Roast chicken — blend thigh with pan juices. Lamb — strain and blend a portion. He sits at the table and eats a version of the same meal. This is the goal.",
+       storage:"Fresh from family meal."}
+    ]},
+    {id:"w8d6",day:"Day 55",label:"Yogurt fruit bowl",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning",name:"Yogurt base with fruit",qty:"3–4 tbsp",
+       recipe:"Full-fat yogurt as the base. Mashed banana, thawed pear, or fresh mango. Drizzle of thinned nut butter for fat and allergen maintenance. Make enough for both of you — share breakfast with him.",
+       storage:"Fresh."},
+      {time:"Dinner",name:"Meat + veg of choice",qty:"2–3 tbsp",
+       recipe:"Your pick from the full roster.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w8d7",day:"Day 56",label:"8 weeks complete",newFood:false,allergen:null,meals:[
+      {time:"Morning + dinner",name:"Raphaël's greatest hits",qty:"Up to ½ cup total across meals",
+       recipe:"All 9 major allergens introduced. A dozen foods in regular rotation. Diverse spices from three continents. Two meals a day. Finger foods underway. Eating alongside family.<br><br>From here: keep all allergens in weekly rotation. Move toward 3 meals by month 9. Let textures get chunkier week by week. Trust his gag reflex. Trust him. Trust yourselves.<br><br><em>Bon appétit, Raphaël.</em>",
+       storage:"Frozen cubes + fresh as needed."}
+    ]},
+  ]},
+];
+
+const ALLERGENS=[
+  {name:"Egg",week:"Week 1 (yolk) · Week 2 (whole egg)",priority:"high",how:"Soft scrambled egg or cooked yolk. Start with yolk only. Move to whole egg 3–4 days later. Watch 2 hours.",maintain:"At least 3× per week once confirmed safe."},
+  {name:"Peanut",week:"Week 3",priority:"high",how:"Smooth peanut butter thinned completely with warm water or breast milk to a pourable consistency. Never thick paste. Never whole nuts.",maintain:"3× per week minimum. Critical — tolerance requires ongoing exposure."},
+  {name:"Tree nuts",week:"Week 4 (almond first)",priority:"high",how:"Smooth almond butter thinned same way as peanut. Introduce each type separately if desired.",maintain:"Weekly. Mix into yogurt, banana, or purées."},
+  {name:"Sesame",week:"Week 4",priority:"med",how:"Tahini stirred into sweet potato or carrot. Already smooth — easiest delivery method.",maintain:"Weekly via tahini. Later via hummus once wheat confirmed."},
+  {name:"Fish",week:"Week 3 (sardine) · Week 5 (salmon)",priority:"high",how:"Sardines mashed from can. Salmon poached and blended smooth. Mix into familiar purée.",maintain:"2× per week — also essential for omega-3s."},
+  {name:"Shellfish",week:"Week 7",priority:"high",how:"Prawn cooked and blended completely smooth. Mix into carrot or sweet potato. Watch 2 hours.",maintain:"Weekly. Shrimp, crab, and scallop all count."},
+  {name:"Dairy",week:"Week 5",priority:"high",how:"Full-fat plain yogurt at room temperature. Not straight cow's milk as a drink until 12 months. Start with 1 tsp.",maintain:"Daily — yogurt, cottage cheese, small amounts of cheese."},
+  {name:"Wheat / Gluten",week:"Week 5",priority:"high",how:"Real sourdough soaked in bone broth. Long fermentation pre-digests some gluten. Avoid crackers as first wheat exposure.",maintain:"A few times per week. Sourdough, pasta, whole grain."},
+  {name:"Soy",week:"Week 6",priority:"med",how:"Silken tofu blended smooth with broth. Or a few drops of low-sodium soy sauce in a purée.",maintain:"Weekly. Lowest priority of the 9."},
+];
+
+const STORAGE=[
+  {icon:"🧊",title:"The ice cube tray system",items:[
+    "<strong>Standard silicone ice cube tray = ~1 tbsp per cube.</strong> This is your primary unit.",
+    "Once frozen solid (4–6 hrs), transfer cubes to labelled ziplock bags — food name + date frozen.",
+    "6 months: 1 cube per serving. By 8–9 months: 2–3 cubes per meal.",
+    "Mix freely. Beef cube + carrot cube thawed together = complete meal in 3 minutes.",
+  ]},
+  {icon:"📅",title:"Freezer life by food",items:[
+    "<strong>Vegetable purées</strong> (sweet potato, carrot, squash, beet, parsnip): 3 months",
+    "<strong>Meat purées</strong> (beef, lamb, chicken): 3 months",
+    "<strong>Liver / pâté:</strong> 2 months",
+    "<strong>Fish</strong> (salmon): 1 month",
+    "<strong>Bone broth:</strong> 3 months",
+    "<strong>Fruit purées</strong> (pear, mango): 2 months",
+    "<strong>Do not freeze:</strong> yogurt, cottage cheese, avocado, banana, opened canned fish",
+  ]},
+  {icon:"🌡️",title:"Thawing safely",items:[
+    "<strong>Best:</strong> Move cubes from freezer to fridge the night before.",
+    "<strong>Fast:</strong> Sealed bag in a bowl of warm water for 15–20 minutes.",
+    "Never microwave directly — hot spots. If you must, stir thoroughly and test on your inner wrist.",
+    "Reheat in a small pot on low, stirring constantly.",
+    "Once thawed: use within 48 hours. Never refreeze.",
+  ]},
+  {icon:"⏱️",title:"Batch cooking rhythm",items:[
+    "One day per week — Sunday works well. Make 3–4 things in parallel.",
+    "Roast vegetables while slow-cooking meat while simmering broth. One 2-hour session = 2–3 weeks of cubes.",
+    "<strong>Best batch items:</strong> beef/lamb purée, sweet potato, carrot, squash, lentils, chicken thigh, broth.",
+    "<strong>Always fresh:</strong> banana, avocado, egg, yogurt. Under 2 minutes each.",
+  ]},
+  {icon:"🏷️",title:"Labelling",items:[
+    "Masking tape + marker: food name + date frozen on every bag.",
+    "Older cubes to the front — first in, first out.",
+    "Keep a small list on the fridge of what's in the freezer.",
+  ]},
+];
+
+// ── INIT ──
+(async () => {
+  // Restore user from localStorage
+  const savedUser = localStorage.getItem('raphael_user');
+  if (savedUser && USERS[savedUser]) {
+    currentUser = savedUser;
+    document.getElementById('setup-screen').classList.add('hidden');
+    updateUserChip();
+  }
+
+  renderChips();
+  renderAllergens();
+  renderStorage();
+
+  await initSupabase();
+
+  renderWeek();
+  updateHeader();
+})();
+</script>
+</body>
+</html>
