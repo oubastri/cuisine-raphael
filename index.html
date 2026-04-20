@@ -198,6 +198,8 @@ button{font-family:'DM Sans',sans-serif;cursor:pointer;border:none;background:no
 .a-priority{padding:3px 9px;border-radius:100px;font-size:10px;font-weight:500;flex-shrink:0}
 .p-hi{background:var(--amber-light);color:var(--amber)}
 .p-md{background:var(--cream2);color:var(--ink2)}
+.p-done{background:var(--green-light);color:var(--green)}
+.a-card.a-done{opacity:0.8;border-color:rgba(61,90,42,0.22);background:#FDFDF9}
 .a-row{display:flex;gap:7px;margin-bottom:6px;font-size:13px;font-weight:300;line-height:1.6}
 .a-row:last-child{margin-bottom:0}
 .a-row b{font-weight:500;color:var(--ink);flex-shrink:0}
@@ -316,7 +318,7 @@ button{font-family:'DM Sans',sans-serif;cursor:pointer;border:none;background:no
 
   <div id="view-storage" class="view">
     <div class="view-title">Storage System</div>
-    <p class="view-sub">The ice cube tray is the foundation. One batch cooking session per week keeps the freezer stocked for 2–3 weeks.</p>
+    <p class="view-sub">The ice cube tray is the foundation. Batch cook once a week, pull cubes all week. Everything here — cooking, freezing, reheating — so you never have to guess.</p>
     <div id="storage-list"></div>
   </div>
 
@@ -340,7 +342,6 @@ button{font-family:'DM Sans',sans-serif;cursor:pointer;border:none;background:no
 <div class="toast" id="toast"></div>
 
 <script>
-// Supabase (same project as setup.sql). If you rotate the anon key, update both strings here.
 const SUPABASE_URL = 'https://qjjoqftytqnrtghyypsj.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqam9xZnR5dHFucnRnaHl5cHNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMjU2NDIsImV4cCI6MjA4OTkwMTY0Mn0.WaOwTlQZGETA3ii1dHuWaXRyJqQPRqXmL3zTTTSDHL0';
 
@@ -350,7 +351,6 @@ const USERS = {
   grand: { name:'Yaya (Elkin)',       initial:'E', bg:'#EEE8F5', color:'#4A2A7A' },
 };
 
-// completed = { dayId: { done: bool, by: 'alex'|'wife'|'grand', at: isoString } }
 let completed = {};
 let currentWeek = 0;
 let currentUser = null;
@@ -368,18 +368,12 @@ async function initSupabase() {
   try {
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
     supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    // Load existing data
     await loadFromSupabase();
-
-    // Subscribe to real-time changes
     channel = supabase
       .channel('progress')
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'raphael_progress'
-      }, payload => {
-        handleRealtime(payload);
-      })
+      }, payload => { handleRealtime(payload); })
       .subscribe();
   } catch(e) {
     console.warn('Supabase init failed, using localStorage', e);
@@ -405,7 +399,7 @@ function handleRealtime(payload) {
   if (payload.eventType === 'DELETE' || (payload.new && !payload.new.done)) {
     completed[row.day_id] = { done: false, by: row.checked_by, at: row.checked_at };
   } else if (payload.new) {
-    completed[row.new.day_id || row.day_id] = { done: payload.new.done, by: payload.new.checked_by, at: payload.new.checked_at };
+    completed[payload.new.day_id || row.day_id] = { done: payload.new.done, by: payload.new.checked_by, at: payload.new.checked_at };
   }
   showSync(`Updated by ${USERS[row.checked_by]?.name || 'family'}`, 2000);
   refreshAll();
@@ -413,7 +407,6 @@ function handleRealtime(payload) {
 
 async function persistToggle(dayId, done) {
   if (!configured) {
-    // localStorage fallback
     if (!completed[dayId]) completed[dayId] = {};
     completed[dayId].done = done;
     completed[dayId].by = currentUser;
@@ -423,10 +416,7 @@ async function persistToggle(dayId, done) {
   }
   showSync('Saving…');
   const { error } = await supabase.from('raphael_progress').upsert({
-    day_id: dayId,
-    done: done,
-    checked_by: currentUser,
-    checked_at: new Date().toISOString(),
+    day_id: dayId, done: done, checked_by: currentUser, checked_at: new Date().toISOString(),
   }, { onConflict: 'day_id' });
   if (error) console.error('Save error:', error);
   hideSync();
@@ -450,9 +440,7 @@ function showSync(msg, autohide) {
   bar.classList.remove('hidden');
   if (autohide) setTimeout(hideSync, autohide);
 }
-function hideSync() {
-  document.getElementById('sync-bar').classList.add('hidden');
-}
+function hideSync() { document.getElementById('sync-bar').classList.add('hidden'); }
 
 // ── USER ──
 function setUser(u) {
@@ -462,11 +450,7 @@ function setUser(u) {
   updateUserChip();
   refreshAll();
 }
-
-function switchUser() {
-  document.getElementById('setup-screen').classList.remove('hidden');
-}
-
+function switchUser() { document.getElementById('setup-screen').classList.remove('hidden'); }
 function updateUserChip() {
   const u = USERS[currentUser];
   if (!u) return;
@@ -506,9 +490,7 @@ function refreshAll() {
 }
 
 // ── HEADER ──
-function updateHeader() {
-  document.getElementById('hdr-prog').textContent = `${totalDone()} / 56`;
-}
+function updateHeader() { document.getElementById('hdr-prog').textContent = `${totalDone()} / 56`; }
 
 // ── CHIPS ──
 function renderChips() {
@@ -582,7 +564,7 @@ function renderWeek() {
             <div class="acc-content">${m.recipe}</div>
           </div>
           <div class="acc acc-storage" id="a-sto-${mid}">
-            <button class="acc-btn" onclick="toggleAcc('a-sto-${mid}')">Storage notes <span class="acc-chev">▾</span></button>
+            <button class="acc-btn" onclick="toggleAcc('a-sto-${mid}')">Storage &amp; reheating <span class="acc-chev">▾</span></button>
             <div class="acc-content">${m.storage}</div>
           </div>
         </div>`;
@@ -646,7 +628,6 @@ function updateProgress() {
   if (g('ov-left')) g('ov-left').textContent = left;
   if (g('ov-pct')) g('ov-pct').textContent = pct+'%';
 
-  // Family rows
   const fam = g('family-rows');
   if (fam) {
     fam.innerHTML = Object.entries(USERS).map(([key, u]) => {
@@ -659,7 +640,6 @@ function updateProgress() {
     }).join('');
   }
 
-  // Week rows
   const rows = g('wk-rows');
   if (rows) {
     rows.innerHTML = WEEKS.map((w,i) => {
@@ -685,10 +665,10 @@ async function confirmReset() {
 // ── STATIC RENDERS ──
 function renderAllergens() {
   document.getElementById('allergen-list').innerHTML = ALLERGENS.map(a => `
-    <div class="a-card">
+    <div class="a-card${a.done?' a-done':''}">
       <div class="a-card-top">
         <div><div class="a-name">${a.name}</div><div class="a-wk">${a.week}</div></div>
-        <span class="a-priority ${a.priority==='high'?'p-hi':'p-md'}">${a.priority==='high'?'High priority':'Standard'}</span>
+        <span class="a-priority ${a.done?'p-done':a.priority==='high'?'p-hi':'p-md'}">${a.done?'Confirmed safe ✓':a.priority==='high'?'High priority':'Standard'}</span>
       </div>
       <div class="a-row"><b>How:</b><span>${a.how}</span></div>
       <div class="a-row"><b>Maintain:</b><span>${a.maintain}</span></div>
@@ -705,405 +685,559 @@ function renderStorage() {
 
 // ── DATA ──
 const WEEKS=[
-  {num:1,title:"Week 1 — First Tastes",desc:"Once a day, mid-morning. 1–2 tsp per session. All purées very smooth. Building on the bone broth and banana he already loves.",allergen:null,
+  // ─────────────────────────────────────────────────────────
+  // ALLERGEN ROTATION RULES (built into every day below)
+  // Egg       → confirmed before Week 1 → 5–6x per week, every week
+  // Peanut    → confirmed W1 Day 2      → 3x per week, every week, forever
+  // Fish      → confirmed W2 Day 8      → 2x per week from Week 2 onward
+  // Tree nut  → confirmed W3 Day 15     → 2x per week from Week 3 onward
+  // Sesame    → confirmed W3 Day 16     → 2x per week from Week 3 onward
+  // Dairy     → confirmed W4 Day 22     → 4x per week from Week 4 onward
+  // Wheat     → confirmed W4 Day 24     → 2x per week from Week 4 onward
+  // Shellfish → confirmed W5 Day 33     → 1x per week from Week 5 onward
+  // Soy       → confirmed W6 Day 36     → 1x per week from Week 6 onward
+  // ─────────────────────────────────────────────────────────
+  // WEEK 1 · April 21–27 · Daily habit + liver + beef + peanut
+  // ─────────────────────────────────────────────────────────
+  {num:1,title:"Week 1 — Daily from Here",
+   desc:"Egg is your daily anchor — it appears every morning from here on. Banana, carrot, sweet potato, avocado, and broth are all confirmed and ready to use. New this week: liver (heme iron, Day 1) and slow-cooked beef (Day 4). <strong>Peanut introduced Tuesday April 22</strong> — exactly 2 days after Sunday's egg confirmation. A banana piece on the tray at every single meal: self-feeding starts now.<br><br><strong>Rotation this week:</strong> Egg 6× (every day except peanut intro) · Peanut 3× (Tue, Wed, Sat)",
+   allergen:"Peanut — Tuesday April 22. Stay home, watch 2 hours.",
    days:[
-    {id:"w1d1",day:"Day 1",label:"Egg yolk",newFood:true,allergen:"Egg (yolk only)",meals:[
-      {time:"Mid-morning · 9–10am",name:"Soft egg yolk in butter",qty:"1 tsp — roughly ¼ of one yolk",
-       recipe:"Bring a small pot of water to a gentle boil. Lower 1 egg in, cook exactly <strong>6 minutes</strong>. Transfer to ice water for 2 min. Peel, remove yolk only. Mash yolk with ¼ tsp grass-fed butter until smooth. Add a splash of breast milk or bone broth to thin to yogurt consistency.<br><br><strong>Why this first:</strong> Egg yolk — choline for brain development, fat-soluble vitamins, easy protein. Yolk before white reduces allergen risk.",
-       storage:"Make fresh. Yolk oxidises quickly."}
+    {id:"w1d1",day:"Day 1 · Monday April 21",label:"Liver + egg yolk into sweet potato",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Egg yolk into sweet potato with chicken liver + banana to hold",qty:"1–2 tbsp purée + banana piece on tray",
+       recipe:"Mash a cooked <strong>egg yolk</strong> into a warmed sweet potato cube. Stir in <strong>½ tsp chicken liver purée</strong> — the sweet potato disguises the intensity completely. Finish with a knob of butter.<br><br><strong>To make liver purée:</strong> rinse 100g fresh chicken livers, pat dry, remove any green spots. Sauté in butter on medium-low, 3–4 min per side until just cooked (slightly pink inside is fine — overcooked tastes harsh). Blend with a small splash of broth until silky. Freeze remainder in ½-tsp dots on a silicone mat.<br><br><strong>Banana finger food:</strong> slice a ripe banana, leave peel on one end as a natural handle. Set on his tray — this is about the self-feeding instinct, not how much he eats. Let him grip and mouth it freely while you spoon-feed.<br><br><strong>Why liver:</strong> heme iron, B12, folate, vitamin A — one of the most nutrient-dense infant foods available. Even ½ tsp weekly is meaningful.",
+       storage:"Frozen sweet potato cube: thaw overnight in fridge, reheat in small pan on low with splash of broth. Liver purée dots: freeze <strong>2 months</strong> — drop a frozen dot into any warm purée and stir to melt. Egg fresh. Banana fresh."}
     ]},
-    {id:"w1d2",day:"Day 2",label:"Egg yolk again",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Soft egg yolk in butter",qty:"1–2 tsp",
-       recipe:"Same as Day 1. Try a little more if he took it well yesterday.",
-       storage:"Make fresh."}
+    {id:"w1d2",day:"Day 2 · Tuesday April 22",label:"Peanut introduction",newFood:true,allergen:"Peanut",meals:[
+      {time:"Mid-morning · 9–10am — stay home, clear 2 hours",name:"Thinned peanut butter",qty:"¼ tsp thinned to pourable consistency",
+       recipe:"<strong>Smooth, natural peanut butter — just peanuts, no sugar, no salt.</strong> Mix ¼ tsp with 2–3 tsp warm water and stir until it pours freely off a spoon with zero resistance. It should look like a thin sauce, not a paste. Thick nut butter is a choking risk; fully thinned is not.<br><br>Serve on its own first — let him taste it before mixing into anything, so you can observe his response clearly.<br><br><strong>Watch for:</strong> hives anywhere on the body, vomiting, wheezing, swelling of face, lips, or tongue. A rash only around the mouth is usually contact irritation, not true allergy. If breathing is affected at all — call emergency services immediately. Do not give antihistamine and wait.<br><br><strong>Why this matters:</strong> The LEAP trial proved early, consistent peanut introduction reduces allergy risk by up to 81%. Exactly the right moment. Banana piece on tray as usual.",
+       storage:"Fresh — 30 seconds to make. Always mix fresh; never store thinned peanut butter."}
     ]},
-    {id:"w1d3",day:"Day 3",label:"Egg yolk + bone broth",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Egg yolk, then warm broth sip",qty:"2 tsp yolk + 1–2 tbsp broth",
-       recipe:"Egg yolk as before. Follow with a small cup of warm bone broth. Anchors the experience in warmth and depth.<br><br><strong>Broth reminder:</strong> Simmer bones (chicken feet, marrow, knuckles) with a splash of apple cider vinegar 12–24 hrs. Strain, keep the fat. Freeze in ice cube trays.",
-       storage:"Broth cubes: 3 months frozen. Warm gently in a small pot — never microwave."}
+    {id:"w1d3",day:"Day 3 · Wednesday April 23",label:"Peanut #2 + scrambled egg",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Scrambled egg + peanut butter into banana + avocado wedge",qty:"½ egg + peanut banana + avocado",
+       recipe:"Soft <strong>scrambled egg</strong>: whisk 1 egg, melt ½ tsp butter in a pan on very low heat, move slowly and continuously, remove while still slightly wet. Alongside, mash thinned <strong>peanut butter</strong> into ripe banana. <strong>Peanut dose #2 this week.</strong><br><br>Avocado wedge on the tray: cut a thick spear of ripe avocado. Easy to grip with a whole palm.",
+       storage:"Fresh."}
     ]},
-    {id:"w1d4",day:"Day 4",label:"Roasted sweet potato",newFood:true,allergen:null,meals:[
-      {time:"Mid-morning",name:"Roasted sweet potato with butter",qty:"1–2 tsp",
-       recipe:"Cut 1 small sweet potato in half, rub with butter, place face-down on a baking tray. Roast at <strong>400°F / 200°C for 35–40 min</strong>. Scoop flesh, blend with 1 tsp butter and enough broth to reach thin yogurt consistency.<br><br><strong>Why roast:</strong> Caramelises natural sugars, concentrates flavour. More complex, less watery than boiling.",
-       storage:"Freeze in ice cube trays. Each cube ≈ 1 tbsp. Label and date. <strong>3 months frozen.</strong>"}
+    {id:"w1d4",day:"Day 4 · Thursday April 24",label:"Slow-cooked beef + egg yolk",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Egg yolk into slow-cooked beef and sweet potato",qty:"2 tbsp purée",
+       recipe:"Mash a <strong>cooked egg yolk</strong> into a warmed beef cube + sweet potato cube combined. Finish with butter.<br><br><strong>To make beef purée:</strong> fatty cut (short rib or chuck), no salt, covered with bone broth in a slow cooker on low for <strong>6–8 hours</strong> until falling apart. Blend with cooking liquid — keep the fat. Freeze in cubes.<br><br><strong>Why red meat:</strong> the most bioavailable heme iron of any food. Together with liver, this is how ancestral diets built infant iron status.<br><br>Steamed carrot spear on tray: steam a whole carrot 15–18 min until completely limp (squeezes between fingers with no resistance). Cut thick enough to grip.",
+       storage:"Beef cubes: freeze <strong>3 months</strong>, thaw overnight in fridge, reheat in small pan on low with broth 3–4 min. Never boil. Fresh egg."}
     ]},
-    {id:"w1d5",day:"Day 5",label:"Sweet potato again",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Sweet potato purée",qty:"2 tsp, working toward 1 tbsp",
-       recipe:"Thaw a cube overnight. Warm in a small pot, stir, test on inner wrist before serving.",
-       storage:"Frozen cube — already made."}
+    {id:"w1d5",day:"Day 5 · Friday April 25",label:"Beef + carrot + egg",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Egg yolk into beef and carrot with cumin + steamed carrot spear",qty:"2 tbsp purée + carrot spear",
+       recipe:"Thaw beef and carrot cubes, warm together. Mash in a <strong>cooked egg yolk</strong>. Add a tiny pinch of <strong>cumin</strong> — his first spice, used across Moroccan, Lebanese, and West African traditions for centuries, including in baby food. Finish with butter.<br><br>Steamed carrot spear on the tray for self-feeding practice. Avocado wedge or banana piece alongside.",
+       storage:"Frozen beef and carrot cubes. Carrot spear: steam fresh, or blanch a batch and refrigerate up to 2 days."}
     ]},
-    {id:"w1d6",day:"Day 6",label:"Banana (his favourite)",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Mashed banana with butter",qty:"1–2 tsp",
-       recipe:"Very ripe banana — lots of brown spots = easier digestion, more sweetness. Mash until no lumps. Work in a tiny knob of soft butter.",
-       storage:"Make fresh. Don't freeze banana purée — goes grey."}
+    {id:"w1d6",day:"Day 6 · Saturday April 26",label:"Peanut #3 + egg — weekly minimum met",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Egg yolk + peanut banana + sweet potato with liver",qty:"2–3 tbsp",
+       recipe:"Mash an <strong>egg yolk</strong> into sweet potato. Stir in a frozen liver dot to melt in. Alongside, thinned <strong>peanut butter</strong> mashed into ripe banana — <strong>peanut dose #3 this week.</strong><br><br><strong>Weekly minimum met.</strong> From here on, peanut appears at least 3 times per week, every week, without exception. Tolerance requires ongoing exposure — a gap of more than 2 weeks can undo what was built.",
+       storage:"Frozen sweet potato + liver dot. Fresh egg and banana."}
     ]},
-    {id:"w1d7",day:"Day 7",label:"Chicken liver purée",newFood:true,allergen:null,meals:[
-      {time:"Mid-morning",name:"Liver purée mixed into sweet potato",qty:"½ tsp liver into 1 tsp sweet potato",
-       recipe:"Take <strong>100g fresh chicken livers</strong>. Rinse, pat dry, remove green bits. Sauté in butter on medium-low for 3–4 min per side until just cooked (still slightly pink inside — overcooked tastes harsh). Blend with a little broth until completely smooth.<br><br><strong>Why liver:</strong> Most nutrient-dense food on earth. Heme iron, vitamin A, B12, folate. Tiny amounts make a real difference.",
-       storage:"Freeze in ½-tsp portions on silicone mat, transfer to bag. <strong>2 months.</strong> Use 1–2x per week."}
+    {id:"w1d7",day:"Day 7 · Sunday April 27",label:"Free mix + egg + banana",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Scrambled egg + beef and sweet potato + banana",qty:"2–3 tbsp",
+       recipe:"<strong>Scrambled egg</strong> alongside beef + sweet potato cubes warmed together with ¼ tsp butter and a dot of marrow butter if you've made any. Banana piece on the tray.<br><br>Notice what he opens his mouth widest for — that enthusiasm is useful data. Sunday is a good time to batch-cook anything running low: beef, sweet potato, and carrot are worth keeping stocked.",
+       storage:"Frozen cubes + fresh egg and banana."}
     ]},
   ]},
-  {num:2,title:"Week 2 — Building Variety",desc:"Continue once a day. Increase toward 1–2 tbsp per session. Mix foods freely — you can combine anything already introduced.",allergen:"Whole egg introduced this week",
+
+  // ─────────────────────────────────────────────────────────
+  // WEEK 2 · April 28 – May 4 · Sardine + marrow butter
+  // ─────────────────────────────────────────────────────────
+  {num:2,title:"Week 2 — Fish, Marrow Butter & Egg Every Day",
+   desc:"Sardines introduced Monday (fish allergen — watch 2 hours). Whipped bone marrow butter joins Tuesday — add ¼ tsp to every purée from here on. Egg is in every morning this week and every week going forward: it appears 7 days this week. <strong>Peanut 3×: Days 10, 12, 14.</strong><br><br><strong>Rotation this week:</strong> Egg 7× · Peanut 3× (Wed/Fri/Sun) · Fish 2× (Mon + Fri)",
+   allergen:"Fish — sardine, Monday April 28. Watch 2 hours.",
    days:[
-    {id:"w2d1",day:"Day 8",label:"Egg yolk + sweet potato",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Egg yolk mashed into sweet potato",qty:"1 tbsp combined",
-       recipe:"Mash a cooked yolk into a thawed cube of sweet potato. Warm together. Fat + vegetable dramatically improves absorption of fat-soluble vitamins.",
-       storage:"Frozen sweet potato cube + fresh yolk."}
+    {id:"w2d1",day:"Day 8 · Monday April 28",label:"Sardines + egg yolk — fish allergen",newFood:true,allergen:"Fish",meals:[
+      {time:"Mid-morning · 9–10am — stay home, watch 2 hours",name:"Sardine purée into sweet potato + egg yolk alongside",qty:"1 tsp sardine in 1 tbsp sweet potato + 1 egg yolk",
+       recipe:"Sardines canned in water or good olive oil — <strong>no added salt, or rinse thoroughly</strong> if in brine. Fork-mash until smooth with a tiny squeeze of lemon and ½ tsp butter. Stir into a warm sweet potato cube.<br><br>Alongside, serve a <strong>mashed egg yolk</strong> — egg is confirmed safe and adding it alongside the new food does not complicate reaction assessment. Watch 2 hours for: hives, vomiting, swelling, wheezing.<br><br><strong>Why sardines:</strong> DHA and EPA omega-3s for brain development, vitamin D, calcium from soft bones, heme iron. Oily fish twice a week is a cornerstone of ancestral Mediterranean infant feeding.",
+       storage:"Sardine: use immediately or refrigerate up to <strong>24 hours</strong>. Never freeze opened tinned fish. Frozen sweet potato cube. Fresh egg yolk."}
     ]},
-    {id:"w2d2",day:"Day 9",label:"Avocado",newFood:true,allergen:null,meals:[
-      {time:"Mid-morning",name:"Mashed avocado with bone broth",qty:"1–2 tsp",
-       recipe:"Scoop ¼ of a ripe avocado. Mash until smooth. Thin with bone broth if needed. Drop of lemon to slow browning. Oleic acid supports brain development and helps absorb other nutrients.",
-       storage:"Best fresh. Refrigerate leftovers pressed with plastic wrap up to 24 hours."}
+    {id:"w2d2",day:"Day 9 · Tuesday April 29",label:"Whipped bone marrow butter + egg",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Egg yolk into sweet potato and carrot with whipped bone marrow butter",qty:"2 tbsp purée + ¼ tsp marrow butter",
+       recipe:"Thaw sweet potato and carrot cubes, warm together. Mash in a <strong>cooked egg yolk</strong>. Stir in <strong>¼ tsp whipped bone marrow butter</strong> (see Storage tab for full prep method).<br><br><strong>What marrow butter is:</strong> roasted marrow whipped with equal weight of soft butter. Fat-soluble vitamins A, D, E, K2; alkylglycerols (rare immune compounds); monounsaturated fats. A ¼ tsp transforms the nutrition of any purée without changing its flavour noticeably.<br><br><strong>From now on:</strong> add ¼ tsp marrow butter to any purée at any time. Keep a jar in the fridge or frozen dots in the freezer. Avocado wedge on tray.",
+       storage:"Marrow butter: fridge <strong>1 week</strong>, frozen dots <strong>2 months</strong>. Add frozen dot directly to warm purée — melts in 30 seconds. Frozen cubes. Fresh egg."}
     ]},
-    {id:"w2d3",day:"Day 10",label:"Roasted carrot",newFood:true,allergen:null,meals:[
-      {time:"Mid-morning",name:"Roasted carrot purée with ghee",qty:"1–2 tbsp",
-       recipe:"Peel and chop 3–4 carrots. Toss with ghee. Roast at <strong>400°F for 25–30 min</strong> until very soft. Blend with broth, finish with more ghee.",
-       storage:"Freeze in ice cube trays. <strong>3 months.</strong>"}
+    {id:"w2d3",day:"Day 10 · Wednesday April 30",label:"Peanut #1 + scrambled egg + marrow",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Scrambled egg + sweet potato with marrow butter + peanut banana",qty:"½ egg + 1 tbsp sweet potato + peanut banana",
+       recipe:"Soft <strong>scrambled egg</strong> alongside. Sweet potato cube warmed with <strong>¼ tsp marrow butter</strong>. Thinned <strong>peanut butter</strong> mashed into ripe banana — <strong>peanut dose #1 this week.</strong><br><br>You're now stacking: heme iron from egg yolk, fat-soluble vitamins from marrow, peanut tolerance, and vitamin C from banana supporting iron absorption. This combination becomes a reflex. Banana piece on tray.",
+       storage:"Frozen sweet potato + marrow butter jar. Fresh egg and banana."}
     ]},
-    {id:"w2d4",day:"Day 11",label:"Whole egg",newFood:true,allergen:"Whole egg — egg white included",meals:[
-      {time:"Mid-morning — stay home, watch 2 hrs",name:"Soft scrambled whole egg",qty:"½ egg",
-       recipe:"Whisk 1 egg. Melt ½ tsp butter in a pan on <strong>very low heat</strong>. Move slowly and continuously — barely-set, custard-like. Remove from heat while slightly wet.<br><br><strong>Allergen note:</strong> First egg white exposure. Watch for: hives, vomiting, swelling. Rash only around mouth = usually contact irritation, not true allergy.",
-       storage:"Make fresh."}
+    {id:"w2d4",day:"Day 11 · Thursday May 1",label:"Beef + liver + marrow + egg",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Egg yolk into beef and carrot with liver and marrow butter",qty:"2 tbsp",
+       recipe:"Thaw beef and carrot cubes. Add a <strong>frozen liver dot</strong> and <strong>¼ tsp marrow butter</strong>. Warm everything together in a small saucepan on lowest heat, stirring gently. Mash in a <strong>cooked egg yolk</strong> at the end.<br><br>Heme iron from egg yolk, beef, and liver. Fat-soluble vitamins from marrow. Beta-carotene from carrot. One of the most nutritionally dense infant meals you can assemble — takes 5 minutes. Steamed carrot spear on tray.",
+       storage:"Frozen beef, carrot, liver dots. Marrow jar. All warm together in the same small pan."}
     ]},
-    {id:"w2d5",day:"Day 12",label:"Egg + avocado",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Scrambled egg with avocado",qty:"½ egg + 1 tsp avocado",
-       recipe:"Scrambled egg alongside a small mash of avocado. Mix or alternate spoonfuls — both excellent fats.",
-       storage:"Fresh."}
+    {id:"w2d5",day:"Day 12 · Friday May 2",label:"Sardine + egg + peanut #2",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Sardine in avocado with egg yolk + thinned peanut banana",qty:"1 tsp sardine + 2 tbsp avocado + 1 egg yolk + peanut banana",
+       recipe:"Mash sardine into fresh avocado with a squeeze of lemon and ½ tsp butter. Mash an <strong>egg yolk</strong> alongside or stir in. Thinned <strong>peanut butter</strong> into banana on the side — <strong>peanut dose #2 this week.</strong><br><br>Fish maintained (2nd time this week ✓). Avocado spear on tray.",
+       storage:"Fresh sardine and avocado. Peanut butter: mix fresh."}
     ]},
-    {id:"w2d6",day:"Day 13",label:"Slow-cooked beef",newFood:true,allergen:null,meals:[
-      {time:"Mid-morning",name:"Beef purée — rich and fatty",qty:"1–2 tsp",
-       recipe:"Fatty cut — <strong>short rib or chuck</strong>. No salt. Slow cook in bone broth on low for <strong>6–8 hours</strong>. Blend with cooking liquid to smooth purée. Keep the fat.",
-       storage:"Freeze in cubes. <strong>3 months.</strong> Most versatile item in the freezer."}
+    {id:"w2d6",day:"Day 13 · Saturday May 3",label:"Roasted parsnip + egg",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Egg yolk into roasted parsnip with butter and cinnamon",qty:"2 tbsp",
+       recipe:"Peel and cube 2 parsnips. Toss with butter. Roast at <strong>400°F / 200°C for 30 min</strong> until very soft and caramelising at edges. Blend with broth. Tiny pinch of cinnamon. Mash in a <strong>cooked egg yolk</strong>.<br><br>Parsnip is naturally sweet and mild — most babies take to it immediately. A good batch item for the freezer. Banana piece on tray.",
+       storage:"Freeze parsnip in cubes — <strong>3 months</strong>. Reheat in small pan with splash of broth on low, 2–3 min."}
     ]},
-    {id:"w2d7",day:"Day 14",label:"Free mix day",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Your choice from the full roster",qty:"1–2 tbsp",
-       recipe:"Mix and match what you have frozen. Good combo: beef cube + sweet potato cube. Or egg yolk into avocado. Notice what he opens his mouth for most enthusiastically.",
-       storage:"Work through frozen stock."}
+    {id:"w2d7",day:"Day 14 · Sunday May 4",label:"Scrambled egg + beef mix + peanut #3",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Scrambled egg + beef and parsnip cubes + peanut banana",qty:"2–3 tbsp",
+       recipe:"<strong>Scrambled egg</strong> alongside beef + parsnip cubes warmed together, ¼ tsp marrow butter stirred in. Thinned <strong>peanut butter</strong> into banana — <strong>peanut dose #3 this week. Weekly minimum met.</strong><br><br>Two finger foods on tray: banana piece and avocado wedge. Sunday: check freezer stock, batch-cook if anything is running low.",
+       storage:"Frozen cubes + marrow jar. Fresh egg, banana."}
     ]},
   ]},
-  {num:3,title:"Week 3 — Peanut & Fish",desc:"Peanut is the most critical allergen to introduce early — the research here is very clear. Do it on a morning when you're home with no plans for 2 hours.",allergen:"Peanut (highest priority) + Fish (sardine)",
+
+  // ─────────────────────────────────────────────────────────
+  // WEEK 3 · May 5–11 · Tree nuts + sesame + new veg
+  // ─────────────────────────────────────────────────────────
+  {num:3,title:"Week 3 — Tree Nuts, Sesame & Egg Every Day",
+   desc:"Almond butter Monday (tree nut allergen), sesame/tahini Tuesday — one allergen per day so any reaction can be clearly attributed. Egg in every morning this week. New vegetables: butternut squash (Wed), chicken thigh (Thu), roasted beet (Sat). Broccoli floret with stalk-handle joins the tray from Thursday.<br><br><strong>Rotation this week:</strong> Egg 7× · Peanut 3× (Wed/Fri/Sat) · Fish 2× (Fri/Sun) · Tree nut 3× (Mon/Wed/Sun) · Sesame 3× (Tue/Thu/Sun)",
+   allergen:"Almond (tree nut) Day 15 + Sesame/tahini Day 16 — introduce on separate days, watch 2 hours each",
    days:[
-    {id:"w3d1",day:"Day 15",label:"Peanut introduction",newFood:true,allergen:"Peanut",meals:[
-      {time:"Mid-morning — clear 2 hours, stay home",name:"Thinned peanut butter",qty:"¼ tsp thinned completely",
-       recipe:"Smooth, natural peanut butter — no sugar or salt, just peanuts. Mix <strong>¼ tsp with 2–3 tsp warm water or breast milk</strong> until it pours off a spoon. Thick nut butter is a choking risk; thinned is not.<br><br><strong>Watch for:</strong> hives, vomiting, wheezing, swelling of face/lips/tongue. Call 911 if breathing is affected.",
-       storage:"Fresh. 30 seconds to make."}
+    {id:"w3d1",day:"Day 15 · Monday May 5",label:"Almond butter + egg — tree nut allergen",newFood:true,allergen:"Tree nut — almond",meals:[
+      {time:"Mid-morning · 9–10am — stay home, watch 2 hours",name:"Thinned almond butter + egg yolk into sweet potato",qty:"¼ tsp almond butter + 1 tbsp sweet potato + egg yolk",
+       recipe:"Smooth almond butter — just almonds, no salt, no sugar. Thin <strong>completely</strong> with warm water to a pourable consistency — identical method to peanut butter. Never serve as a paste. Watch 2 hours.<br><br>Alongside, serve a <strong>mashed egg yolk</strong> into sweet potato with marrow butter — egg is confirmed and won't confuse any reaction assessment. Banana piece on tray.",
+       storage:"Almond butter: mix fresh. Frozen sweet potato cube. Fresh egg."}
     ]},
-    {id:"w3d2",day:"Day 16",label:"Peanut day 2",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Thinned peanut butter",qty:"¼–½ tsp thinned",
-       recipe:"Same preparation. Peanut needs <strong>at least 3× per week</strong> going forward to maintain tolerance.",
-       storage:"Fresh."}
+    {id:"w3d2",day:"Day 16 · Tuesday May 6",label:"Sesame/tahini + egg — sesame allergen",newFood:true,allergen:"Sesame",meals:[
+      {time:"Mid-morning · 9–10am — stay home, watch 2 hours",name:"Tahini into sweet potato + egg yolk alongside",qty:"¼ tsp tahini in 1 tbsp sweet potato + egg yolk",
+       recipe:"Tahini is sesame paste — already perfectly smooth. Stir the jar well first (oil separates). Mix ¼ tsp into a warmed sweet potato cube. Watch 2 hours.<br><br><strong>Cooked egg yolk</strong> alongside in a separate dish — keeps today's reaction assessment clean while maintaining egg in the daily routine. Once tahini confirmed: it goes into everything — yogurt, banana, squash, carrot, and eventually hummus.",
+       storage:"Tahini jar keeps at room temperature for months. Frozen sweet potato. Fresh egg."}
     ]},
-    {id:"w3d3",day:"Day 17",label:"Sardines",newFood:true,allergen:"Fish",meals:[
-      {time:"Mid-morning",name:"Sardine purée with lemon and butter",qty:"1 tsp",
-       recipe:"Sardines canned in water or olive oil — no added salt or rinse well. Mash with a fork, tiny squeeze of lemon, ½ tsp butter. Blend smoother if needed. <strong>Mix into sweet potato or avocado.</strong><br><br>Omega-3s, vitamin D, calcium from soft bones — oily fish twice a week is a cornerstone of ancestral infant feeding.",
-       storage:"Use immediately or refrigerate up to 24 hours. Don't freeze once opened."}
+    {id:"w3d3",day:"Day 17 · Wednesday May 7",label:"Butternut squash + egg + peanut #1 + almond",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Scrambled egg + roasted butternut squash with almond butter and peanut banana",qty:"½ egg + 2 tbsp squash",
+       recipe:"<strong>Scrambled egg</strong> alongside roasted butternut squash. Squash: cube ¼ butternut, toss in coconut oil, roast at <strong>400°F for 30–35 min</strong>. Blend with tiny scrape of fresh ginger and broth. Drizzle thinned <strong>almond butter</strong> over (tree nut maintained ✓).<br><br>Thinned <strong>peanut butter</strong> into banana on the side — <strong>peanut #1 this week.</strong> Both nut butters maintained in one morning.",
+       storage:"Freeze squash in cubes — <strong>3 months</strong>. Fresh egg and banana."}
     ]},
-    {id:"w3d4",day:"Day 18",label:"Peanut + banana",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Peanut butter mashed into banana",qty:"¼ tsp PB thinned + 1 tsp banana",
-       recipe:"Mix thinned peanut butter into mashed banana. A combination he'll love. Natural way to keep peanut in regular rotation.",
-       storage:"Fresh."}
+    {id:"w3d4",day:"Day 18 · Thursday May 8",label:"Chicken thigh + broccoli floret + egg + tahini",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Scrambled egg into chicken thigh purée + tahini drizzle + broccoli floret on tray",qty:"½ egg + 1–2 tbsp chicken + broccoli floret",
+       recipe:"<strong>Bone-in chicken thigh</strong>: place in pot, cover with cold water and a bay leaf, gentle simmer for 25–30 min. Remove skin and bone, blend meat with broth. Stir in <strong>scrambled egg</strong> or mash a yolk directly into the chicken purée. Drizzle <strong>¼ tsp tahini</strong> over the top (sesame maintained ✓).<br><br><strong>Broccoli floret as finger food:</strong> steam a whole head 10–12 min until completely limp. Offer one floret with generous stalk pointing toward him — he grips the stalk, gnaws the floret. Brilliant for gum stimulation.",
+       storage:"Chicken cubes: freeze <strong>3 months</strong>. One thigh makes 6–8 cubes. Fresh egg. Broccoli: fridge up to 2 days."}
     ]},
-    {id:"w3d5",day:"Day 19",label:"Roasted parsnip",newFood:true,allergen:null,meals:[
-      {time:"Mid-morning",name:"Roasted parsnip with butter and cinnamon",qty:"1–2 tbsp",
-       recipe:"Peel and cube 2 parsnips. Toss in butter. Roast at 400°F for 30 min. Blend with broth. Tiny pinch of cinnamon — a great moment to start warm spices. Ancestral diets across the Middle East and North Africa have always spiced baby food.",
-       storage:"Freeze in cubes. 3 months."}
+    {id:"w3d5",day:"Day 19 · Friday May 9",label:"Sardine + egg + avocado + peanut #2",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Sardine in avocado with egg yolk + peanut banana",qty:"1 tsp sardine + 2 tbsp avocado + egg yolk + peanut banana",
+       recipe:"Mash sardine into fresh avocado with lemon and butter. Stir in a <strong>mashed egg yolk</strong>. Thinned <strong>peanut butter</strong> into banana alongside — <strong>peanut #2 this week.</strong><br><br>Fish maintained (1st of 2× this week ✓). Omega-3 from sardine, oleic acid from avocado, iron and fat from egg yolk — excellent combination. Avocado spear on tray.",
+       storage:"Fresh sardine and avocado. Fresh egg. Peanut: mix fresh."}
     ]},
-    {id:"w3d6",day:"Day 20",label:"Lamb + liver",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Lamb purée with a smear of liver",qty:"1–2 tbsp lamb + ½ tsp liver",
-       recipe:"Thaw a lamb/beef cube and a liver portion. Warm together. Meat softens the liver's intensity while keeping all the nutrients. 1–2 liver servings per week, always mixed with another meat.",
-       storage:"Frozen cubes."}
+    {id:"w3d6",day:"Day 20 · Saturday May 10",label:"Roasted beet + egg + peanut #3",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Egg yolk into roasted beet + peanut banana",qty:"1–2 tbsp beet + egg yolk + peanut banana",
+       recipe:"Wrap a small raw beet in foil with a knob of butter. Roast at <strong>400°F for 50–60 min</strong> (skewer should slide through with no resistance). Peel warm — skin slides off. Blend with collected butter, juices, and a splash of broth. Mash in a <strong>cooked egg yolk</strong>.<br><br>Thinned <strong>peanut butter</strong> into banana — <strong>peanut #3 this week. Weekly minimum met.</strong><br><br><strong>Note:</strong> pink or red in his next nappy is normal — beet colours stool and urine.",
+       storage:"Beet cubes: freeze <strong>3 months</strong>. Use a dedicated spatula — beet stains. Fresh egg and banana."}
     ]},
-    {id:"w3d7",day:"Day 21",label:"Consolidation",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Pick from everything so far",qty:"2–3 tbsp",
-       recipe:"Full roster: egg (yolk + whole), sweet potato, carrot, avocado, banana, beef, lamb, liver, sardine, parsnip, peanut. Mix freely. Good plate: scrambled egg + sweet potato cube + smear of peanut butter.",
-       storage:"Work through frozen stock."}
+    {id:"w3d7",day:"Day 21 · Sunday May 11",label:"Full roster — egg + sardine + almond + tahini",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Scrambled egg into chicken and squash + tahini + almond butter + sardine in avocado",qty:"2–3 tbsp",
+       recipe:"<strong>Scrambled egg</strong> stirred into chicken + butternut squash cubes warmed together, <strong>¼ tsp tahini</strong> and <strong>¼ tsp marrow butter</strong> stirred in (sesame maintained ✓).<br><br>Separately, <strong>sardine</strong> mashed into fresh avocado (fish — 2nd of 2× this week ✓). Thinned <strong>almond butter</strong> drizzled over (tree nut maintained ✓).<br><br>Three weeks in. Full confirmed roster: egg, banana, avocado, carrot, sweet potato, beef, chicken, liver, parsnip, squash, beet, sardine, peanut, almond, sesame, marrow.",
+       storage:"Frozen cubes + marrow jar + fresh sardine/avocado/egg."}
     ]},
   ]},
-  {num:4,title:"Week 4 — Tree Nuts & Sesame",desc:"Two more major allergens. Start leaving small soft lumps in purées — he's ready for a little more texture.",allergen:"Almond (tree nut) + Sesame",
+
+  // ─────────────────────────────────────────────────────────
+  // WEEK 4 · May 12–18 · Dairy + wheat + two meals begin
+  // ─────────────────────────────────────────────────────────
+  {num:4,title:"Week 4 — Dairy, Wheat & Two Meals",
+   desc:"Full-fat yogurt Monday (dairy allergen — watch 2 hours). Sourdough in broth Wednesday (wheat allergen). Two meals begin Thursday May 15. Red lentils join the freezer. From this week, yogurt appears most mornings as the dairy vehicle.<br><br><strong>Rotation this week:</strong> Egg 6× (skip Mon dairy intro) · Peanut 3× (Tue/Fri/Sat) · Fish 2× (Fri/Sun dinner) · Tree nut 2× (Fri/Sun) · Sesame 2× (Fri/Sun) · Dairy 5× (Mon intro then daily) · Wheat 2× (Wed intro + Sat)",
+   allergen:"Dairy/yogurt Day 22 (Mon) + Wheat/sourdough Day 24 (Wed) — one new allergen per day, watch 2 hours each",
    days:[
-    {id:"w4d1",day:"Day 22",label:"Almond butter",newFood:true,allergen:"Tree nut — almond",meals:[
-      {time:"Mid-morning — watch 2 hrs",name:"Thinned almond butter",qty:"¼ tsp thinned completely",
-       recipe:"Smooth almond butter, no salt or sugar. Thin completely with warm water to pourable consistency — same method as peanut. Never chunky.",
+    {id:"w4d1",day:"Day 22 · Monday May 12",label:"Full-fat yogurt — dairy allergen",newFood:true,allergen:"Dairy",meals:[
+      {time:"Mid-morning · 9–10am — stay home, watch 2 hours",name:"Whole milk plain yogurt",qty:"1 tsp to start",
+       recipe:"<strong>Whole milk, plain yogurt — no flavour, no added sugar, full fat only.</strong> Fermentation pre-digests some lactose and proteins, making yogurt far gentler on an infant gut than straight cow's milk. Serve at <strong>room temperature</strong> — take it out of the fridge 20 min before. Start with 1 tsp. Mix with a tiny amount of mashed banana if he's uncertain about the tang. Watch 2 hours. Egg skipped today so reaction assessment is unambiguous.",
+       storage:"Fridge. Use within the week. <strong>Do not freeze yogurt</strong> — texture breaks down completely."}
+    ]},
+    {id:"w4d2",day:"Day 23 · Tuesday May 13",label:"Egg + yogurt + peanut #1",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Scrambled egg + yogurt bowl with peanut butter and banana",qty:"½ egg + 1–2 tbsp yogurt bowl",
+       recipe:"<strong>Scrambled egg</strong> alongside a <strong>yogurt</strong> bowl (dairy ✓): full-fat yogurt at room temperature, mashed ripe banana, thinned <strong>peanut butter</strong> drizzled over — <strong>peanut #1 this week.</strong><br><br>Pre-loaded spoon: scoop a small amount onto a spoon, hand it to him, let him bring it to his own mouth. Every attempt — drop, smear, or success — builds oral motor skills. Steamed carrot spear on tray.",
        storage:"Fresh."}
     ]},
-    {id:"w4d2",day:"Day 23",label:"Sesame via tahini",newFood:true,allergen:"Sesame",meals:[
-      {time:"Mid-morning — watch 2 hrs",name:"Tahini stirred into sweet potato",qty:"¼ tsp tahini in 1 tbsp sweet potato",
-       recipe:"Tahini (sesame paste) — already smooth, mixes into anything. Stir ¼ tsp into a warm sweet potato cube. Sesame is in the top 9 allergens. Watch 2 hours. <strong>Stir the jar well</strong> before using.",
-       storage:"Fresh prep using frozen sweet potato cube."}
+    {id:"w4d3",day:"Day 24 · Wednesday May 14",label:"Sourdough in broth — wheat allergen + egg",newFood:true,allergen:"Wheat / Gluten",meals:[
+      {time:"Mid-morning · 9–10am — stay home, watch 2 hours",name:"Sourdough soaked in bone broth + egg yolk alongside",qty:"Softened sourdough piece + egg yolk",
+       recipe:"<strong>Real sourdough from a proper bakery</strong> — long-fermented (minimum 8–12 hours), not commercial loaves. Tear a small piece of the crumb (not crust). Soak in warm bone broth until completely soft — no structural integrity. Long fermentation partially pre-digests the gluten, making this far gentler than crackers or white bread.<br><br>Serve a <strong>mashed egg yolk</strong> alongside (egg is confirmed, won't confuse reaction). Full-fat <strong>yogurt</strong> with banana on the side (dairy maintained ✓). Watch 2 hours.",
+       storage:"Fresh sourdough and broth. Yogurt from fridge. Fresh egg."}
     ]},
-    {id:"w4d3",day:"Day 24",label:"Butternut squash",newFood:true,allergen:null,meals:[
-      {time:"Mid-morning",name:"Roasted butternut squash with coconut oil and ginger",qty:"2 tbsp",
-       recipe:"Cube ¼ butternut squash, toss in coconut oil. Roast at 400°F for 30–35 min. Blend with a tiny scrape of fresh ginger and broth. Ginger is wonderful for infant digestion — used in Moroccan, Lebanese, and West African traditions.",
-       storage:"Freeze in cubes. 3 months."}
+    {id:"w4d4",day:"Day 25 · Thursday May 15",label:"Two meals begin + red lentils",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Scrambled egg into sweet potato with marrow butter + yogurt alongside",qty:"2–3 tbsp + yogurt",
+       recipe:"<strong>Scrambled egg</strong> stirred into a warm sweet potato cube with <strong>¼ tsp marrow butter</strong>. Full-fat <strong>yogurt</strong> with banana alongside (dairy ✓).<br><br>Banana piece on tray. Pre-loaded spoon for the yogurt.",
+       storage:"Frozen sweet potato + marrow jar. Fresh egg. Fridge yogurt."},
+      {time:"Early dinner · 5:30pm",name:"Red lentil purée with cumin and butter",qty:"1–2 tbsp (start small)",
+       recipe:"<strong>Red lentils:</strong> rinse ¼ cup. Combine with ¾ cup bone broth and a pinch of cumin. Simmer uncovered <strong>15–20 min</strong> until completely dissolved — no soaking needed. Blend smooth. Stir in a generous knob of butter. <em>A deeply ancestral food across Levantine and North African tradition.</em><br><br>Dinner is small to start. His system adjusts over 2–3 days.",
+       storage:"Lentil cubes: freeze <strong>3 months</strong>. Add broth when reheating — they thicken significantly. Reheat on low, 3–4 min."}
     ]},
-    {id:"w4d4",day:"Day 25",label:"Chicken thigh",newFood:true,allergen:null,meals:[
-      {time:"Mid-morning",name:"Chicken thigh purée",qty:"1–2 tbsp",
-       recipe:"<strong>Bone-in chicken thigh</strong> — more flavour and fat than breast. Simmer in cold water with a bay leaf for 25–30 min until completely tender. Remove skin and bone, blend with cooking broth until smooth.",
-       storage:"Freeze in cubes. <strong>3 months.</strong> One thigh makes many cubes."}
-    ]},
-    {id:"w4d5",day:"Day 26",label:"Almond + sesame repeat",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Tahini banana with almond butter",qty:"½ tsp tahini in banana + ¼ tsp almond thinned",
-       recipe:"Tahini into mashed banana. Thinned almond butter alongside. Confirming both allergen responses. Both need to stay in weekly rotation.",
-       storage:"Fresh."}
-    ]},
-    {id:"w4d6",day:"Day 27",label:"Roasted beet",newFood:true,allergen:null,meals:[
-      {time:"Mid-morning",name:"Roasted beet with butter",qty:"1–2 tbsp",
-       recipe:"Wrap a small beet in foil with butter. Roast at 400°F for 50–60 min. Peel (skin slides off), blend with butter and broth until very smooth.<br><br>Beautiful deep colour — don't be alarmed if his next nappy is pink. Beets appear in Levantine baby food traditions.",
-       storage:"Freeze in cubes. 3 months."}
-    ]},
-    {id:"w4d7",day:"Day 28",label:"One month — celebrate",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"His favourite combination",qty:"2–3 tbsp",
-       recipe:"Pull his favourite cubes. Great plate: chicken + beet, egg yolk mashed in, smear of tahini-banana. One full month. You've introduced egg, peanut, tree nut, fish, sesame, beef, lamb, liver, and a wide range of vegetables. An exceptional ancestral first month.",
-       storage:"Frozen stock."}
-    ]},
-  ]},
-  {num:5,title:"Week 5 — Dairy & Wheat",desc:"The last two major allergens. Textures can now be lumpier — leave more in the mash than you did in Week 1.",allergen:"Dairy (full-fat yogurt) + Wheat / Gluten",
-   days:[
-    {id:"w5d1",day:"Day 29",label:"Full-fat yogurt",newFood:true,allergen:"Dairy",meals:[
-      {time:"Mid-morning — watch 2 hrs",name:"Whole milk plain yogurt",qty:"1 tsp to start",
-       recipe:"<strong>Whole milk, plain yogurt</strong> — no flavour, no added sugar. Fermentation makes it easier to digest than straight milk. Serve at room temperature — never cold. Mix with banana if he's uncertain about the tang.",
-       storage:"Keep in fridge. Use within the week. Don't freeze yogurt."}
-    ]},
-    {id:"w5d2",day:"Day 30",label:"Yogurt + banana",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Yogurt with mashed banana",qty:"1–2 tbsp",
-       recipe:"Stir ripe mashed banana into yogurt. <strong>No honey before 12 months</strong> — botulism risk.",
-       storage:"Fresh."}
-    ]},
-    {id:"w5d3",day:"Day 31",label:"Wheat — sourdough in broth",newFood:true,allergen:"Wheat / Gluten",meals:[
-      {time:"Mid-morning — watch 2 hrs",name:"Sourdough soaked in bone broth",qty:"Small torn piece, very soft",
-       recipe:"<strong>Real sourdough bread</strong> from a proper bakery — long-fermented. Tear a small piece, soak in warm bone broth until completely soft. Long fermentation pre-digests some gluten — far better than crackers or rice cereal as first wheat exposure.",
-       storage:"Fresh."}
-    ]},
-    {id:"w5d4",day:"Day 32",label:"Wheat day 2 + yogurt",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Soaked sourdough alongside yogurt",qty:"Small soft piece + 1 tbsp yogurt",
-       recipe:"Both allergens confirmed. Dairy and wheat now free to use in rotation.",
-       storage:"Fresh."}
-    ]},
-    {id:"w5d5",day:"Day 33",label:"Salmon",newFood:true,allergen:"Fish — salmon",meals:[
-      {time:"Mid-morning",name:"Poached salmon purée",qty:"1–2 tsp",
-       recipe:"Small piece of <strong>wild salmon</strong>. Simmer gently in water or broth for 8–10 min. Remove skin and bones, blend with butter and broth. Mix into sweet potato or carrot.",
-       storage:"Refrigerate, use within 24 hours. Freeze up to 1 month."}
-    ]},
-    {id:"w5d6",day:"Day 34",label:"Cauliflower + cheddar",newFood:true,allergen:null,meals:[
-      {time:"Mid-morning",name:"Cauliflower purée with grated cheddar",qty:"2 tbsp",
-       recipe:"Steam cauliflower florets very soft (8–10 min). Blend with butter, broth, and a small grating of good cheddar. Dairy confirmed — cheese is fine now.",
-       storage:"Freeze in cubes. 3 months."}
-    ]},
-    {id:"w5d7",day:"Day 35",label:"Texture day — leave lumps",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Lumpier mash — intentional texture",qty:"3–4 tbsp",
-       recipe:"Deliberately mash a thawed cube less smoothly — leave small soft lumps. Texture practice now makes finger foods significantly easier later. His gag reflex is designed for this. Stay calm when he gags.",
+    {id:"w4d5",day:"Day 26 · Friday May 16",label:"Egg + sardine + peanut #2 + almond + sesame + dairy",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Egg into cauliflower cheddar + sardine in avocado + peanut banana + almond + tahini",qty:"2–3 tbsp",
+       recipe:"A full-rotation morning. <strong>Cauliflower cheddar:</strong> steam cauliflower 8–10 min, blend with butter, broth, and a grating of cheddar (dairy ✓). Mash an <strong>egg yolk</strong> in.<br><br>Alongside: <strong>sardine</strong> mashed into avocado with lemon (fish ✓). Thinned <strong>peanut butter</strong> into banana (peanut ✓ — <strong>#2 this week</strong>). Drizzle of thinned <strong>almond butter</strong> (tree nut ✓). <strong>Tahini</strong> stirred into anything (sesame ✓).<br><br>Yes this is a lot — combine what makes sense, don't stress about separate bowls.",
+       storage:"Freeze cauliflower cheddar cubes — <strong>3 months</strong>. Fresh sardine + avocado + egg."},
+      {time:"Dinner · 5:30pm",name:"Chicken + carrot",qty:"2 tbsp",
+       recipe:"Two cubes, warmed with a knob of butter. Simple and reliable.",
        storage:"Frozen cubes."}
     ]},
-  ]},
-  {num:6,title:"Week 6 — Soy & Two Meals",desc:"Last major allergen. If he's showing interest, add an early dinner around 5:30pm — small and simple to start.",allergen:"Soy — final of the major 9 allergens",
-   days:[
-    {id:"w6d1",day:"Day 36",label:"Soy introduction",newFood:true,allergen:"Soy",meals:[
-      {time:"Mid-morning — watch 2 hrs",name:"Silken tofu in bone broth",qty:"1 tsp",
-       recipe:"<strong>Soft or silken tofu</strong> — no firm tofu yet. Mash completely smooth, mix with warm bone broth. Or stir a few drops of low-sodium soy sauce into a familiar purée.",
-       storage:"Refrigerate tofu, use within 2 days. Don't freeze."}
-    ]},
-    {id:"w6d2",day:"Day 37",label:"Red lentil purée",newFood:true,allergen:null,meals:[
-      {time:"Mid-morning",name:"Red lentil purée with cumin and butter",qty:"2 tbsp",
-       recipe:"Rinse ¼ cup red lentils. Cook in broth (1:3 ratio) with a pinch of cumin for 15–20 min until completely mushy. Blend until very smooth. Finish with butter. Red lentils need no soaking.<br><br><strong>A deeply ancestral food</strong> across Levantine and North African tradition.",
-       storage:"Freeze in cubes. <strong>3 months.</strong>"}
-    ]},
-    {id:"w6d3",day:"Day 38",label:"Two meals begin",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Egg + vegetable",qty:"2–3 tbsp",
-       recipe:"Morning meal as established.",
-       storage:"Frozen cubes."},
-      {time:"Early dinner · ~5:30pm",name:"Meat purée + vegetable",qty:"1–2 tbsp (smaller to start)",
-       recipe:"Beef or lamb cube + carrot or squash cube. Keep dinner simpler while his system adjusts.",
-       storage:"Frozen cubes."}
-    ]},
-    {id:"w6d4",day:"Day 39",label:"Spice expansion",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Spiced carrot purée",qty:"2–3 tbsp",
-       recipe:"Thaw carrot cube, warm in pot. Add a tiny pinch of cumin and scrape of fresh ginger. Spices are not allergen risks — they are flavour education. You grew up across Casablanca, Beirut, Paris. Let that palette shape his.",
-       storage:"Frozen cube."},
-      {time:"Dinner",name:"Chicken + cauliflower",qty:"2 tbsp",
-       recipe:"Chicken cube + cauliflower cheddar cube, warmed together.",
-       storage:"Frozen cubes."}
-    ]},
-    {id:"w6d5",day:"Day 40",label:"Cottage cheese",newFood:true,allergen:null,meals:[
-      {time:"Mid-morning",name:"Cottage cheese with banana",qty:"1–2 tbsp",
-       recipe:"Full-fat cottage cheese. If curds are large, blend smooth. Mix with mashed banana. Great protein and calcium.",
-       storage:"Fridge, use within the week."},
-      {time:"Dinner",name:"Salmon + beet",qty:"2 tbsp",
-       recipe:"Salmon and beet cubes, warmed and mixed. Fatty fish + beet — both anti-inflammatory.",
-       storage:"Frozen cubes."}
-    ]},
-    {id:"w6d6",day:"Day 41",label:"Fresh papaya",newFood:true,allergen:null,meals:[
-      {time:"Mid-morning",name:"Mashed papaya",qty:"1–2 tbsp",
-       recipe:"Scoop ripe papaya flesh, remove seeds. Mash with a fork — naturally smooth. Contains papain, a digestive enzyme.",
-       storage:"Fresh. Use within a day."},
-      {time:"Dinner",name:"Lentil + beef",qty:"2 tbsp",
-       recipe:"Lentil cube + beef cube. Legume + meat is protein-complete and deeply ancestral.",
-       storage:"Frozen cubes."}
-    ]},
-    {id:"w6d7",day:"Day 42",label:"Week 6 review",newFood:false,allergen:null,meals:[
-      {time:"Morning + dinner",name:"His favourites from both meals",qty:"3–4 tbsp morning, 2 tbsp dinner",
-       recipe:"All 9 major allergens introduced: egg, peanut, tree nut, fish, dairy, wheat, sesame, soy. Shellfish comes in Week 7. The hardest part is behind you.",
-       storage:"Frozen cubes."}
-    ]},
-  ]},
-  {num:7,title:"Week 7 — Shellfish & Finger Foods",desc:"Last allergen group. Start offering soft finger foods alongside purées. Small, completely soft pieces only.",allergen:"Shellfish — final allergen group",
-   days:[
-    {id:"w7d1",day:"Day 43",label:"Prawn purée",newFood:true,allergen:"Shellfish",meals:[
-      {time:"Mid-morning — watch 2 hrs",name:"Blended prawn with butter",qty:"1 tsp",
-       recipe:"Raw prawns — not pre-cooked with added salt. Peel, devein. Boil 2–3 min until pink. Blend completely smooth with butter and broth. Mix into carrot or sweet potato.",
-       storage:"Fresh. Refrigerate, use within 24 hours."}
-    ]},
-    {id:"w7d2",day:"Day 44",label:"Banana finger food",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Purée + soft banana piece to hold",qty:"Purée as usual + 1–2 banana pieces",
-       recipe:"Cut ripe banana into thick rounds, then halve — C-shape easy to grip. Leave peel on one end as a handle. Let him hold it and mouth it. This is about self-feeding instinct, not eating much.<br><br>Stay close, stay calm. Gagging is normal and protective.",
+    {id:"w4d6",day:"Day 27 · Saturday May 17",label:"Egg + peanut #3 + yogurt + sourdough",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Scrambled egg + yogurt peanut banana + broth-soaked sourdough strip",qty:"½ egg + yogurt bowl + sourdough strip",
+       recipe:"<strong>Scrambled egg.</strong> <strong>Yogurt</strong> with mashed banana and thinned <strong>peanut butter</strong> (peanut ✓ — <strong>#3 this week. Weekly minimum met.</strong> Dairy ✓).<br><br>Sourdough strip soaked in warm broth until completely soft — wheat maintained ✓, and he can hold the strip as finger food. Pre-loaded spoon for the yogurt.",
        storage:"Fresh."},
-      {time:"Dinner",name:"Meat + veg",qty:"2–3 tbsp",
-       recipe:"Lamb cube + parsnip cube.",
+      {time:"Dinner · 5:30pm",name:"Beef + lentil",qty:"2 tbsp",
+       recipe:"Two cubes. Iron-rich and protein-complete.",
        storage:"Frozen cubes."}
     ]},
-    {id:"w7d3",day:"Day 45",label:"Broccoli — purée + floret",newFood:true,allergen:null,meals:[
-      {time:"Mid-morning",name:"Broccoli both ways",qty:"2 tbsp purée + 1 soft floret",
-       recipe:"Steam until very soft (10–12 min). One floret — stalk as natural handle. Reserve rest: blend with butter and broth. <strong>Offer both forms</strong> — bridges purée to self-feeding.",
-       storage:"Freeze purée cubes. Florets: fresh or fridge 24 hrs max."}
-    ]},
-    {id:"w7d4",day:"Day 46",label:"Self-feeding egg practice",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Pre-loaded spoon handed to him",qty:"½ egg",
-       recipe:"Make soft scrambled egg. <strong>Pre-load a spoon and hand it to him</strong> — let him bring it to his own mouth. Huge for oral motor development. Messy. That's right.",
-       storage:"Fresh."},
-      {time:"Dinner",name:"Lentil + chicken",qty:"2–3 tbsp",
-       recipe:"Lentil cube + chicken cube.",
-       storage:"Frozen cubes."}
-    ]},
-    {id:"w7d5",day:"Day 47",label:"Poached pear",newFood:true,allergen:null,meals:[
-      {time:"Mid-morning",name:"Poached pear with cinnamon",qty:"2 tbsp",
-       recipe:"Peel and core a ripe pear. Simmer in just enough water for 10 min until very soft. Purée or soft finger food pieces. Tiny pinch of cinnamon. Very easy on the gut.",
-       storage:"Refrigerate 2 days. Or freeze purée cubes."}
-    ]},
-    {id:"w7d6",day:"Day 48",label:"Bone marrow",newFood:true,allergen:null,meals:[
-      {time:"Mid-morning",name:"Roasted bone marrow on sourdough",qty:"¼ tsp marrow",
-       recipe:"Ask your butcher for split marrow bones. Roast at <strong>450°F for 15–20 min</strong> until wobbly. Scoop a tiny amount, serve on broth-soaked sourdough.<br><br>One of the most ancestrally complete foods you can offer — fat-soluble vitamins, collagen precursors, minerals. A truly extraordinary food for a truly extraordinary boy.",
-       storage:"Make fresh when you have bones."},
-      {time:"Dinner",name:"Veg + protein mix",qty:"2–3 tbsp",
-       recipe:"Any combination from the roster.",
-       storage:"Frozen cubes."}
-    ]},
-    {id:"w7d7",day:"Day 49",label:"Finger food exploration",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Finger food session",qty:"Various soft pieces + small purée",
-       recipe:"Lay out 2–3 soft options: banana piece, broccoli floret, soft pear chunk. Let him explore. Offer purée by spoon alongside. The shift to self-feeding is a long, beautiful overlap.",
-       storage:"Fresh + frozen cubes."},
-      {time:"Dinner",name:"Family-style inspiration",qty:"2–3 tbsp",
-       recipe:"Look at what you're cooking — can you blend a small portion for him? Lamb stew, roast chicken thigh, grilled fish — the answer is almost always yes.",
-       storage:"As appropriate."}
+    {id:"w4d7",day:"Day 28 · Sunday May 18",label:"One month — egg + almond + tahini + salmon dinner",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Egg into squash with marrow + yogurt + almond butter + tahini",qty:"3–4 tbsp",
+       recipe:"<strong>Scrambled egg</strong> stirred into butternut squash cube, <strong>¼ tsp marrow butter</strong>. <strong>Yogurt</strong> bowl alongside with thinned <strong>almond butter</strong> (tree nut ✓) and a drizzle of <strong>tahini</strong> (sesame ✓).<br><br>One full month since Monday April 21. Six allergens confirmed: egg, peanut, tree nut, sesame, fish, dairy, wheat. Two meals daily. Finger foods every session.",
+       storage:"Frozen squash + marrow jar. Fresh egg. Fridge yogurt."},
+      {time:"Dinner · 5:30pm",name:"Salmon + lentil",qty:"2 tbsp",
+       recipe:"<strong>Salmon</strong> (poached, blended with butter) + lentil cube — fish maintained 2× this week ✓. High omega-3 and high iron in one bowl.",
+       storage:"Fresh/frozen salmon + frozen lentil."}
     ]},
   ]},
-  {num:8,title:"Week 8 — The Family Table",desc:"Two solid meals daily, moving toward three. Textures get chunkier. The goal: he eats with the family, not in isolation.",allergen:null,
+
+  // ─────────────────────────────────────────────────────────
+  // WEEK 5 · May 19–25 · Salmon + shellfish + pre-loaded spoon
+  // ─────────────────────────────────────────────────────────
+  {num:5,title:"Week 5 — Salmon, Shellfish & Self-Feeding",
+   desc:"Salmon Monday (watch 2 hours — different species from sardine). Pre-loaded spoon practice starts Tuesday and becomes the standard from here on. Shellfish/prawn Friday (watch 2 hours). Full finger food tray mid-week. Egg, dairy, wheat, peanut, sesame, and tree nuts all explicitly in rotation this week.<br><br><strong>Rotation this week:</strong> Egg 7× · Peanut 3× (Tue/Thu/Sat) · Fish 2× (Mon salmon + Wed sardine) · Tree nut 2× (Wed/Sun) · Sesame 2× (Wed/Sun) · Dairy 4× (Tue/Thu/Sat/Sun) · Wheat 2× (Tue/Thu) · Shellfish 2× (Fri intro + Sat dinner)",
+   allergen:"Salmon Day 29 (Mon) + Shellfish/prawn Day 33 (Fri) — watch 2 hours each",
    days:[
-    {id:"w8d1",day:"Day 50",label:"Morning routine locked in",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Egg + vegetable + something fatty",qty:"3–4 tbsp",
-       recipe:"This should feel like reflex now. Egg, a frozen cube, something with fat — butter, avocado, marrow, salmon. This is the ancestral breakfast pattern, and it's his.",
-       storage:"Frozen cubes."},
-      {time:"Dinner",name:"Protein + veg",qty:"2–3 tbsp",
-       recipe:"Meat cube + vegetable cube. Simple. He's building appetite for morning.",
+    {id:"w5d1",day:"Day 29 · Monday May 19",label:"Salmon + egg — second fish allergen",newFood:true,allergen:"Fish — salmon",meals:[
+      {time:"Mid-morning · 9–10am — stay home, watch 2 hours",name:"Poached salmon into sweet potato + egg yolk alongside",qty:"1–2 tsp salmon + 1 tbsp sweet potato + egg yolk",
+       recipe:"<strong>Wild salmon</strong> (farmed fine if unavailable): simmer small piece in water or broth on gentle heat <strong>8–10 min</strong> until just opaque. Check carefully for bones. Blend with butter and broth. Mix into warm sweet potato cube.<br><br><strong>Egg yolk</strong> alongside in a separate spoonful — confirmed and fine to include while watching for salmon reaction. Watch 2 hours. Once confirmed: aim for two oily fish servings per week total (sardine + salmon alternating).",
+       storage:"Fresh salmon: refrigerate, use within <strong>24 hours</strong>. Or freeze up to <strong>1 month</strong>. Reheat very gently — thaw in fridge, warm in pan on lowest heat with butter 1–2 min only. Never microwave salmon. Frozen sweet potato. Fresh egg."},
+      {time:"Dinner · 5:30pm",name:"Lentil + carrot",qty:"2 tbsp",
+       recipe:"Two cubes, warmed with butter.",
        storage:"Frozen cubes."}
     ]},
-    {id:"w8d2",day:"Day 51",label:"Green beans",newFood:true,allergen:null,meals:[
-      {time:"Mid-morning",name:"Green beans as finger food",qty:"2–3 beans",
-       recipe:"Trim ends. Blanch in boiling water for <strong>6–8 min</strong> until completely limp. Serve whole — the long shape is easy for him to grip. Good iron source.",
-       storage:"Blanch a batch, refrigerate up to 2 days."},
-      {time:"Dinner",name:"Chicken + squash",qty:"2–3 tbsp",
-       recipe:"Chicken cube + squash cube.",
-       storage:"Frozen cubes."}
-    ]},
-    {id:"w8d3",day:"Day 52",label:"Chicken liver pâté",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Proper pâté on sourdough",qty:"½–1 tsp on soft sourdough",
-       recipe:"Sauté <strong>100g chicken livers</strong> in 2 tbsp butter with a tiny pinch of thyme. Cook until just done. Blend with cooking butter until smooth. Stir in 1 tbsp more soft butter. A proper pâté. No salt.",
-       storage:"Fridge 3–4 days. Freeze in silicone mat portions — 2 months."},
-      {time:"Dinner",name:"Salmon + lentil",qty:"2–3 tbsp",
-       recipe:"High omega-3 + high iron — one of the best combinations in his rotation.",
-       storage:"Frozen cubes."}
-    ]},
-    {id:"w8d4",day:"Day 53",label:"Mango",newFood:true,allergen:null,meals:[
-      {time:"Mid-morning",name:"Fresh mango — purée and pieces",qty:"2 tbsp",
-       recipe:"Very ripe mango. Slice cheeks, scoop flesh. Blend for purée or cut into soft pieces for finger food. Natural enzymes, vitamin C (boosts iron absorption), gorgeous flavour. Ancestral across North African and Middle Eastern tradition.",
-       storage:"Fresh. Refrigerate 24 hours max."},
-      {time:"Dinner",name:"Beef + beet",qty:"2–3 tbsp",
-       recipe:"A beautiful dark, rich combination.",
-       storage:"Frozen cubes."}
-    ]},
-    {id:"w8d5",day:"Day 54",label:"Family dinner",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Standard morning meal",qty:"3–4 tbsp",
-       recipe:"His established routine. He knows what this is now.",
-       storage:"Frozen cubes."},
-      {time:"Family dinner",name:"Adapted version of what you're having",qty:"2–3 tbsp",
-       recipe:"Grilled fish — flake with butter. Roast chicken — blend thigh with pan juices. Lamb — strain and blend a portion. He sits at the table and eats a version of the same meal. This is the goal.",
-       storage:"Fresh from family meal."}
-    ]},
-    {id:"w8d6",day:"Day 55",label:"Yogurt fruit bowl",newFood:false,allergen:null,meals:[
-      {time:"Mid-morning",name:"Yogurt base with fruit",qty:"3–4 tbsp",
-       recipe:"Full-fat yogurt as the base. Mashed banana, thawed pear, or fresh mango. Drizzle of thinned nut butter for fat and allergen maintenance. Make enough for both of you — share breakfast with him.",
+    {id:"w5d2",day:"Day 30 · Tuesday May 20",label:"Pre-loaded spoon + egg + peanut #1 + yogurt + sourdough",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Scrambled egg — pre-loaded spoon + yogurt peanut banana + sourdough strip",qty:"½ egg + yogurt bowl + sourdough strip",
+       recipe:"Make soft <strong>scrambled egg</strong>. Scoop onto a spoon. <strong>Hand the spoon to him and let him bring it to his own mouth.</strong> Do not guide his hand. He will drop it. He will smear it. All of this is correct — every attempt builds oral motor skills.<br><br><strong>Yogurt</strong> with mashed banana and thinned <strong>peanut butter</strong> alongside (dairy ✓, peanut ✓ — <strong>#1 this week</strong>). <strong>Sourdough strip</strong> soaked in broth — wheat maintained ✓, and he can hold it.",
        storage:"Fresh."},
-      {time:"Dinner",name:"Meat + veg of choice",qty:"2–3 tbsp",
-       recipe:"Your pick from the full roster.",
+      {time:"Dinner · 5:30pm",name:"Beef + beet",qty:"2 tbsp",
+       recipe:"Two cubes, warmed together. Dark, rich, iron-dense.",
        storage:"Frozen cubes."}
     ]},
-    {id:"w8d7",day:"Day 56",label:"8 weeks complete",newFood:false,allergen:null,meals:[
-      {time:"Morning + dinner",name:"Raphaël's greatest hits",qty:"Up to ½ cup total across meals",
-       recipe:"All 9 major allergens introduced. A dozen foods in regular rotation. Diverse spices from three continents. Two meals a day. Finger foods underway. Eating alongside family.<br><br>From here: keep all allergens in weekly rotation. Move toward 3 meals by month 9. Let textures get chunkier week by week. Trust his gag reflex. Trust him. Trust yourselves.<br><br><em>Bon appétit, Raphaël.</em>",
+    {id:"w5d3",day:"Day 31 · Wednesday May 21",label:"Salmon + egg + almond + sesame + sardine",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Egg into salmon and avocado with marrow + almond butter + tahini + sardine",qty:"2–3 tbsp",
+       recipe:"Thaw/use salmon purée, mash into fresh avocado with <strong>¼ tsp marrow butter</strong>. Stir a <strong>mashed egg yolk</strong> in (egg ✓). Drizzle thinned <strong>almond butter</strong> (tree nut ✓) and <strong>¼ tsp tahini</strong> (sesame ✓).<br><br>Alongside, 1 tsp <strong>sardine</strong> mashed with lemon (fish — 2× this week ✓). Two omega-3 sources in one meal.",
+       storage:"Fresh salmon, avocado, sardine. Marrow jar. Fresh egg."},
+      {time:"Dinner · 5:30pm",name:"Chicken + cauliflower cheddar",qty:"2 tbsp",
+       recipe:"Two cubes warmed with butter. Dairy maintained ✓.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w5d4",day:"Day 32 · Thursday May 22",label:"Egg + peanut #2 + yogurt + sourdough + finger food tray",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Scrambled egg + yogurt peanut bowl + sourdough + three finger foods",qty:"2–3 tbsp + finger food tray",
+       recipe:"<strong>Scrambled egg</strong> alongside. <strong>Yogurt</strong> with mashed banana and thinned <strong>peanut butter</strong> (dairy ✓, peanut ✓ — <strong>#2 this week</strong>). <strong>Sourdough strip</strong> soaked in broth on the side (wheat ✓).<br><br>Three things on the tray: banana piece, broccoli floret, avocado wedge. Let him explore all three while you spoon-feed the yogurt. Pre-loaded spoon for one or two bites of yogurt.",
+       storage:"Fresh."},
+      {time:"Dinner · 5:30pm",name:"Lamb + lentil",qty:"2 tbsp",
+       recipe:"Two cubes, warmed. Protein-complete and ancestral.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w5d5",day:"Day 33 · Friday May 23",label:"Prawn — shellfish allergen + egg",newFood:true,allergen:"Shellfish",meals:[
+      {time:"Mid-morning · 9–10am — stay home, watch 2 hours",name:"Prawn purée into sweet potato + egg yolk alongside",qty:"1 tsp prawn into 1 tbsp sweet potato + egg yolk",
+       recipe:"<strong>Raw prawns — not pre-cooked packaged ones with added sodium.</strong> Peel and devein 2–3 raw prawns. Boil in plain water <strong>2–3 min</strong> until just pink. Blend completely smooth with butter and broth — no texture. Mix into warm sweet potato cube.<br><br><strong>Egg yolk</strong> alongside — confirmed, won't confuse assessment. Watch 2 hours. Shellfish reactions can be significant — call emergency services immediately if breathing is affected.",
+       storage:"Fresh. Refrigerate, use within 24 hours. Do not freeze prawn purée."},
+      {time:"Dinner · 5:30pm",name:"Beef + carrot",qty:"2 tbsp",
+       recipe:"Two cubes, simple.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w5d6",day:"Day 34 · Saturday May 24",label:"Egg + yogurt + peanut #3 + shellfish repeat",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Scrambled egg + yogurt with peanut butter and almond butter",qty:"½ egg + 2–3 tbsp yogurt bowl",
+       recipe:"<strong>Scrambled egg.</strong> <strong>Yogurt</strong> bowl with mashed banana, thinned <strong>peanut butter</strong> (peanut ✓ — <strong>#3 this week. Weekly minimum met.</strong>), and thinned <strong>almond butter</strong> (tree nut ✓). Dairy ✓.<br><br>Pre-loaded spoon for the yogurt bowl.",
+       storage:"Fresh."},
+      {time:"Dinner · 5:30pm",name:"Prawn purée into carrot",qty:"2 tbsp",
+       recipe:"Second shellfish exposure — confirming the response. Fresh prawn purée into warm carrot cube.",
+       storage:"Fresh prawn. Frozen carrot."}
+    ]},
+    {id:"w5d7",day:"Day 35 · Sunday May 25",label:"Deliberate lumps + egg + sesame + almond",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Lumpy fork-mashed egg into sweet potato + tahini + almond butter + yogurt",qty:"3–4 tbsp",
+       recipe:"Thaw sweet potato cube and <strong>fork-mash deliberately rough</strong> — obvious soft lumps. Mash a <strong>cooked egg yolk</strong> in (egg ✓). Stir in <strong>¼ tsp tahini</strong> (sesame ✓) and drizzle thinned <strong>almond butter</strong> (tree nut ✓). <strong>Yogurt</strong> on the side (dairy ✓).<br><br><strong>Texture practice is intentional.</strong> His gag reflex is the protective mechanism working correctly. When he gags, stay completely calm and silent — do not reach in, do not exclaim. He will manage it. If you react with alarm, he will develop a texture aversion.",
+       storage:"Frozen sweet potato + marrow jar. Fridge yogurt. Fresh egg."},
+      {time:"Dinner · 5:30pm",name:"Chicken + squash",qty:"2 tbsp",
+       recipe:"Two cubes, warmed with butter and a pinch of ginger.",
+       storage:"Frozen cubes."}
+    ]},
+  ]},
+
+  // ─────────────────────────────────────────────────────────
+  // WEEK 6 · May 26 – Jun 1 · Soy + all 9 done
+  // ─────────────────────────────────────────────────────────
+  {num:6,title:"Week 6 — Soy Done. All 9 Confirmed.",
+   desc:"Soy Monday — the last of the 9 major allergens. Once confirmed: the most important dietary groundwork for a child's life is complete. Every allergen now stays in weekly rotation. Cottage cheese, papaya, green beans, and lamb join this week. Every morning includes egg. Peanut, fish, dairy, wheat, sesame, and almond all explicitly in the day recipes.<br><br><strong>Rotation this week:</strong> Egg 7× · Peanut 3× (Tue/Wed/Fri) · Fish 2× (Tue dinner salmon + Sat sardine) · Tree nut 2× (Fri/Sun) · Sesame 2× (Wed/Sat) · Dairy 4× (Mon/Tue/Wed/Fri) · Wheat 2× (Thu/Sat) · Shellfish 1× (Mon dinner) · Soy 2× (Mon intro + Fri)",
+   allergen:"Soy — silken tofu Monday May 26. Final major allergen.",
+   days:[
+    {id:"w6d1",day:"Day 36 · Monday May 26",label:"Soy — all 9 done. Egg + yogurt.",newFood:true,allergen:"Soy",meals:[
+      {time:"Mid-morning · 9–10am — stay home, watch 2 hours",name:"Silken tofu in bone broth + egg yolk + yogurt alongside",qty:"1 tsp tofu + egg yolk + yogurt",
+       recipe:"<strong>Soft or silken tofu</strong> — not firm. Mash completely smooth with a fork, mix with warm bone broth. Watch 2 hours.<br><br><strong>Egg yolk</strong> alongside (confirmed ✓). <strong>Full-fat yogurt</strong> with banana on the side (dairy ✓) — keeping dairy in daily rotation.<br><br><strong>All 9 major allergens introduced: egg, peanut, tree nut, sesame, fish (sardine + salmon), shellfish, dairy, wheat, soy.</strong> Every one of these now stays in weekly rotation permanently.",
+       storage:"Tofu: refrigerate, use within 2 days. Do not freeze. Fresh egg. Fridge yogurt."},
+      {time:"Dinner · 5:30pm",name:"Prawn + carrot",qty:"2 tbsp",
+       recipe:"Shellfish in weekly rotation ✓.",
+       storage:"Fresh prawn. Frozen carrot."}
+    ]},
+    {id:"w6d2",day:"Day 37 · Tuesday May 27",label:"Egg + cottage cheese + peanut #1 + salmon dinner",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Scrambled egg + cottage cheese with peanut banana",qty:"½ egg + 1–2 tbsp cottage cheese bowl",
+       recipe:"<strong>Scrambled egg</strong> alongside. Full-fat <strong>cottage cheese</strong> (dairy ✓) — if curds are large, blend briefly. Mix with mashed banana. Room temperature. Thinned <strong>peanut butter</strong> stirred in (peanut ✓ — <strong>#1 this week</strong>).<br><br>Pre-loaded spoon for the cottage cheese bowl.",
+       storage:"Cottage cheese fridge, use within the week. Fresh egg. Peanut mix fresh."},
+      {time:"Dinner · 5:30pm",name:"Salmon + lentil",qty:"2 tbsp",
+       recipe:"Fish maintained ✓ (1st of 2× this week). Omega-3 + iron — one of the best combinations.",
+       storage:"Fresh/frozen salmon + frozen lentil."}
+    ]},
+    {id:"w6d3",day:"Day 38 · Wednesday May 28",label:"Egg + papaya + peanut #2 + tahini + yogurt",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Scrambled egg + mashed papaya with peanut butter + yogurt with tahini",qty:"½ egg + 2 tbsp papaya + yogurt",
+       recipe:"<strong>Scrambled egg</strong> alongside. Very ripe <strong>papaya</strong> — scoop flesh, discard seeds, mash with fork. Contains papain (digestive enzyme). Thinned <strong>peanut butter</strong> stirred into papaya (peanut ✓ — <strong>#2 this week</strong>). Papaya piece on tray as finger food.<br><br><strong>Yogurt</strong> with <strong>¼ tsp tahini</strong> stirred in (dairy ✓, sesame ✓). Pre-loaded spoon.",
+       storage:"Fresh papaya, use within a day. Fridge yogurt. Fresh egg."},
+      {time:"Dinner · 5:30pm",name:"Beef + beet",qty:"2 tbsp",
+       recipe:"Dark, iron-rich, ancestral.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w6d4",day:"Day 39 · Thursday May 29",label:"Egg + spiced carrot + sourdough + green beans",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Egg into spiced carrot with cumin and ginger + sourdough strip + green beans",qty:"2 tbsp + sourdough strip + green beans",
+       recipe:"Warm a carrot cube with a pinch of <strong>cumin</strong> and tiny scrape of fresh <strong>ginger</strong>. Mash in a <strong>cooked egg yolk</strong> (egg ✓). Alongside, a <strong>sourdough strip</strong> soaked in broth (wheat ✓) and a pile of blanched green beans on the tray.<br><br><strong>Green beans as finger food:</strong> trim ends, blanch in boiling water <strong>6–8 min</strong> until completely limp. The long shape is easy for a full palm-grip. Let him gnaw 4–6 beans throughout the meal.",
+       storage:"Frozen carrot. Sourdough fresh. Green beans: blanch a batch, fridge up to 2 days."},
+      {time:"Dinner · 5:30pm",name:"Chicken + squash",qty:"2 tbsp",
+       recipe:"Two cubes, simple.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w6d5",day:"Day 40 · Friday May 30",label:"Egg + peanut #3 + soy + almond + yogurt",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Scrambled egg + yogurt with peanut butter, almond butter, and blended tofu",qty:"½ egg + 2–3 tbsp yogurt bowl",
+       recipe:"<strong>Scrambled egg.</strong> <strong>Yogurt</strong> bowl (dairy ✓): mashed banana, thinned <strong>peanut butter</strong> (peanut ✓ — <strong>#3 this week. Weekly minimum met.</strong>), thinned <strong>almond butter</strong> (tree nut ✓), and 1 tsp <strong>silken tofu</strong> blended smooth into the yogurt (soy ✓). All four allergens maintained in one bowl.",
+       storage:"Fresh. Tofu: use remainder within 2 days."},
+      {time:"Dinner · 5:30pm",name:"Lamb + lentil",qty:"2 tbsp",
+       recipe:"Two cubes. Protein-complete.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w6d6",day:"Day 41 · Saturday June 1",label:"Egg + sardine + tahini + sourdough + lamb + finger food tray",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Egg into lamb purée + sardine in avocado + tahini + sourdough strip + three finger foods",qty:"2–3 tbsp + finger food tray",
+       recipe:"<strong>Lamb purée</strong> (slow-cook lamb shoulder on low 5–6 hrs in broth, blend — rich heme iron) with a <strong>mashed egg yolk</strong> stirred in (egg ✓). <strong>Tahini</strong> drizzled over (sesame ✓).<br><br>Alongside: <strong>sardine</strong> mashed into avocado (fish ✓ — 2nd of 2× this week). <strong>Sourdough strip</strong> soaked in broth (wheat ✓).<br><br>Three things on tray: banana, broccoli floret, avocado wedge (or green beans). Full self-feeding exploration.",
+       storage:"Lamb cubes: freeze <strong>3 months</strong>. Fresh sardine + avocado + egg."},
+      {time:"Dinner · 5:30pm",name:"Chicken + cauliflower cheddar",qty:"2 tbsp",
+       recipe:"Two cubes. Dairy maintained ✓.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w6d7",day:"Day 42 · Sunday June 2",label:"Full rotation — all 9 confirmed, two meals locked",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Scrambled egg into sweet potato + yogurt + marrow butter",qty:"3–4 tbsp",
+       recipe:"<strong>Scrambled egg</strong> into sweet potato cube with <strong>¼ tsp marrow butter</strong>. <strong>Yogurt</strong> bowl alongside (dairy ✓). Sunday reset: work through older cubes, batch-cook anything running low.",
+       storage:"Frozen cubes + marrow jar. Fridge yogurt. Fresh egg."},
+      {time:"Dinner · 5:30pm",name:"Beef + carrot with cumin",qty:"2 tbsp",
+       recipe:"Two cubes, pinch of cumin, knob of butter.",
+       storage:"Frozen cubes."}
+    ]},
+  ]},
+
+  // ─────────────────────────────────────────────────────────
+  // WEEK 7 · Jun 3–9 · Texture + bone marrow + family table
+  // ─────────────────────────────────────────────────────────
+  {num:7,title:"Week 7 — Texture, Marrow & the Family Table",
+   desc:"No new allergens — all 9 are done. Egg in every morning. Peanut explicitly 3× (previously missing entirely — now locked in). Mango, poached pear, roasted bone marrow as a celebration, chicken liver pâté on sourdough, and the family dinner beginning. He is almost 9 months by end of this week.<br><br><strong>Rotation this week:</strong> Egg 7× · Peanut 3× (Mon/Fri/Sat) · Fish 2× (Mon sardine + Wed salmon dinner) · Tree nut 2× (Tue/Thu) · Sesame 2× (Wed/Thu) · Dairy 4× (Mon/Tue/Fri/Sat) · Wheat 2× (Wed sourdough + Fri pâté) · Shellfish 1× (Fri dinner) · Soy 1× (Sun)",
+   allergen:null,
+   days:[
+    {id:"w7d1",day:"Day 43 · Monday June 3",label:"Mango + egg + peanut #1 + sardine + yogurt",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Scrambled egg + mango with peanut butter + sardine + yogurt",qty:"2–3 tbsp",
+       recipe:"<strong>Scrambled egg</strong> (egg ✓). Very ripe <strong>mango</strong>: slice cheeks, scoop flesh — blend half for purée, cut half into soft spears for tray. Vitamin C, digestive enzymes, gorgeous flavour. Thinned <strong>peanut butter</strong> into mango purée (peanut ✓ — <strong>#1 this week</strong>).<br><br><strong>Sardine</strong> mashed into avocado alongside (fish ✓ — 1st of 2×). <strong>Yogurt</strong> with banana on the side (dairy ✓). Mango spear on tray.",
+       storage:"Fresh mango — refrigerate cut, use within 24 hours. Fresh sardine. Fridge yogurt. Fresh egg."},
+      {time:"Dinner · 5:30pm",name:"Chicken + lentil",qty:"2 tbsp",
+       recipe:"Two cubes, warmed.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w7d2",day:"Day 44 · Tuesday June 4",label:"Poached pear + egg + yogurt + almond + sourdough",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Egg into yogurt and poached pear with almond butter + sourdough strip",qty:"2–3 tbsp",
+       recipe:"Peel and core a ripe pear, simmer in just enough water for <strong>10 min</strong> until very soft. Purée or leave as soft pieces. Tiny pinch of cinnamon. Stir into <strong>full-fat yogurt</strong> (dairy ✓).<br><br>Mash a <strong>cooked egg yolk</strong> alongside or into the yogurt bowl (egg ✓). Drizzle thinned <strong>almond butter</strong> over (tree nut ✓). <strong>Sourdough strip</strong> soaked in broth on the side (wheat ✓). Pre-loaded spoon.",
+       storage:"Poached pear: fridge 2 days or freeze purée cubes. Fridge yogurt. Fresh egg."},
+      {time:"Dinner · 5:30pm",name:"Beef + beet",qty:"2 tbsp",
+       recipe:"Dark and rich. Use older freezer stock.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w7d3",day:"Day 45 · Wednesday June 5",label:"Bone marrow on sourdough + egg + tahini + salmon dinner",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Roasted bone marrow on sourdough + scrambled egg + tahini-carrot",qty:"¼ tsp marrow on sourdough + ½ egg + 1 tbsp carrot",
+       recipe:"<strong>Ask your butcher for split marrow bones</strong> (cut lengthwise). Roast at <strong>450°F / 230°C for 15–20 min</strong> until marrow is wobbly. Scoop a tiny amount, spread on a broth-soaked <strong>sourdough strip</strong> (wheat ✓) — he can hold and gnaw it.<br><br><strong>Scrambled egg</strong> alongside (egg ✓). Warm carrot cube with <strong>¼ tsp tahini</strong> stirred in (sesame ✓).<br><br>Fat-soluble vitamins A, D, E, K2; alkylglycerols; monounsaturated fat. One of the most ancestrally complete foods you can offer. <em>A truly extraordinary food for a truly extraordinary boy.</em>",
+       storage:"Make marrow fresh — serve immediately once scooped. Frozen carrot. Fresh egg."},
+      {time:"Dinner · 5:30pm",name:"Salmon + squash",qty:"2 tbsp",
+       recipe:"Fish ✓ — 2nd of 2× this week. Salmon purée into butternut squash cube.",
+       storage:"Fresh/frozen salmon + frozen squash."}
+    ]},
+    {id:"w7d4",day:"Day 46 · Thursday June 6",label:"Lumpy textures + egg + almond + tahini + four finger foods",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Lumpy fork-mash with egg + almond butter + tahini + four things on tray",qty:"3 tbsp purée + finger food tray",
+       recipe:"Thaw two cubes, <strong>fork-mash deliberately rough</strong> — obvious chunks. Mash in a <strong>cooked egg yolk</strong> (egg ✓). Drizzle thinned <strong>almond butter</strong> (tree nut ✓) and <strong>¼ tsp tahini</strong> (sesame ✓).<br><br>Four things on tray: banana piece, broccoli floret, green beans (2–3), avocado wedge. Pre-loaded spoon for one or two bites of the purée. Full parallel feeding: finger foods + pre-loaded spoon + spoon-fed purée all at once.",
+       storage:"Frozen cubes + fresh tray items."},
+      {time:"Dinner · 5:30pm",name:"Lamb + carrot",qty:"2 tbsp",
+       recipe:"Two cubes, warmed.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w7d5",day:"Day 47 · Friday June 7",label:"Pâté on sourdough + egg + peanut #2 + yogurt + shellfish dinner",newFood:true,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Chicken liver pâté on sourdough + scrambled egg + yogurt peanut banana",qty:"½–1 tsp pâté + ½ egg + yogurt bowl",
+       recipe:"<strong>Pâté:</strong> sauté 100g chicken livers in 2 tbsp butter with a tiny pinch of thyme. Cook on medium until just done throughout. Blend completely smooth with cooking butter. Stir in 1 tbsp more soft butter. No salt for his portion. Spread a thin smear on broth-soaked <strong>sourdough strip</strong> (wheat ✓) for him to hold and gnaw.<br><br><strong>Scrambled egg</strong> alongside (egg ✓). <strong>Yogurt</strong> with thinned <strong>peanut butter</strong> and mashed banana (dairy ✓, peanut ✓ — <strong>#2 this week</strong>).",
+       storage:"Pâté: fridge <strong>3–4 days</strong>, freeze in silicone portions <strong>2 months</strong>. Thaw in fridge, serve at just above room temperature."},
+      {time:"Dinner · 5:30pm",name:"Prawn + lentil",qty:"2 tbsp",
+       recipe:"Shellfish maintained ✓. Fresh prawn purée into warm lentil cube.",
+       storage:"Fresh prawn. Frozen lentil."}
+    ]},
+    {id:"w7d6",day:"Day 48 · Saturday June 8",label:"Egg + peanut #3 + yogurt + family dinner",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Scrambled egg + yogurt with peanut butter and banana",qty:"3–4 tbsp",
+       recipe:"<strong>Scrambled egg.</strong> <strong>Yogurt</strong> with mashed banana and thinned <strong>peanut butter</strong> (dairy ✓, peanut ✓ — <strong>#3 this week. Weekly minimum met.</strong>). Pre-loaded spoon for the yogurt.",
+       storage:"Fresh."},
+      {time:"Family dinner · ~6pm",name:"Adapted version of what you're having",qty:"2–3 tbsp",
+       recipe:"Look at what you're making. <strong>Grilled fish</strong> — flake with butter and broth. <strong>Roast chicken</strong> — take a thigh, fork-mash with pan juices. <strong>Lamb stew or tagine</strong> — strain and roughly mash a portion. <strong>Pasta</strong> — this is why you introduced wheat. He sits at the table with you. This is the goal.",
+       storage:"From family meal."}
+    ]},
+    {id:"w7d7",day:"Day 49 · Sunday June 9",label:"Open cup + egg + soy + yogurt",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Scrambled egg + yogurt with tofu + open cup of water",qty:"½ egg + yogurt bowl + a few drops water",
+       recipe:"<strong>Scrambled egg</strong> (egg ✓). <strong>Yogurt</strong> bowl (dairy ✓) with 1 tsp <strong>silken tofu</strong> blended in (soy ✓). Mashed banana.<br><br><strong>Open cup introduction:</strong> fill a tiny cup (espresso cup or shot glass) with just a few drops of water. Hold to his lips. He will mostly dribble. That is correct. An open cup builds oral motor coordination a sippy cup bypasses entirely.",
+       storage:"Frozen cubes + fresh egg + fridge yogurt + fresh tofu."},
+      {time:"Dinner · 5:30pm",name:"Oldest cubes in the freezer",qty:"2 tbsp",
+       recipe:"First in, first out. Use what has been in the freezer longest.",
+       storage:"Frozen cubes."}
+    ]},
+  ]},
+
+  // ─────────────────────────────────────────────────────────
+  // WEEK 8 · Jun 10–16 · The family table
+  // ─────────────────────────────────────────────────────────
+  {num:8,title:"Week 8 — The Family Table",
+   desc:"Two solid meals every day, moving toward three. Textures are fork-mashed — no blender. Egg every single morning. Peanut, fish, sesame, tree nuts, dairy, wheat, soy all explicitly in the daily recipes. Dinners are increasingly from the family table. That was always the destination.<br><br><strong>Rotation this week:</strong> Egg 7× · Peanut 3× (Mon/Thu/Sat) · Fish 2× (Wed sardine + Sun salmon dinner) · Tree nut 2× (Tue/Sun) · Sesame 2× (Wed/Sun) · Dairy 4× (Mon/Tue/Thu/Sat) · Wheat 2× (Wed/Sat pâté) · Shellfish 1× (Sat dinner) · Soy 1× (Fri)",
+   allergen:null,
+   days:[
+    {id:"w8d1",day:"Day 50 · Monday June 10",label:"Egg + peanut #1 + yogurt + morning routine locked in",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Egg + frozen cube + peanut banana + yogurt + marrow butter",qty:"3–4 tbsp",
+       recipe:"This is the pattern. <strong>Egg</strong> in some form, one or two frozen cubes, <strong>¼ tsp marrow butter</strong>. Thinned <strong>peanut butter</strong> into banana (peanut ✓ — <strong>#1 this week</strong>). <strong>Yogurt</strong> alongside (dairy ✓). Open cup of water. One finger food on tray. It should feel like reflex now. It is.",
+       storage:"Frozen cubes + marrow jar. Fresh egg. Fridge yogurt."},
+      {time:"Dinner · 5:30pm",name:"Protein + vegetable",qty:"2–3 tbsp",
+       recipe:"Two cubes from the freezer — meat + vegetable. Butter. Simple.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w8d2",day:"Day 51 · Tuesday June 11",label:"Yogurt bowl + egg + almond — make enough for both of you",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Yogurt bowl with banana, almond butter, poached pear + scrambled egg",qty:"3–4 tbsp",
+       recipe:"<strong>Yogurt</strong> base (dairy ✓), mashed banana, a spoonful of pear purée, thinned <strong>almond butter</strong> (tree nut ✓). <strong>Scrambled egg</strong> alongside (egg ✓).<br><br><strong>Make enough for both of you.</strong> Sit across from him and eat the same thing. A child watching a parent eat the same food with obvious enjoyment is the most powerful anti-picky-eater tool that exists.",
+       storage:"Fresh."},
+      {time:"Dinner · 5:30pm",name:"Lamb + lentil",qty:"2 tbsp",
+       recipe:"Ancestral and iron-rich.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w8d3",day:"Day 52 · Wednesday June 12",label:"Egg + sardine + tahini + sourdough + green beans",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Egg into sardine and avocado + tahini + sourdough strip + green bean pile",qty:"2 tbsp + sourdough strip + green beans",
+       recipe:"Sardine mashed into fresh avocado with lemon and butter (fish ✓). <strong>Egg yolk</strong> mashed in (egg ✓). <strong>Tahini</strong> drizzled over (sesame ✓). <strong>Sourdough strip</strong> soaked in broth (wheat ✓). Green bean pile (6–8, blanched limp) on the tray. Pre-loaded spoon for one or two bites.",
+       storage:"Fresh sardine + avocado + egg. Green beans pre-blanched."},
+      {time:"Dinner · 5:30pm",name:"Chicken + cauliflower cheddar",qty:"2 tbsp",
+       recipe:"Two cubes. Dairy maintained ✓.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w8d4",day:"Day 53 · Thursday June 12",label:"Fork-mash only + egg + peanut #2 + yogurt",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Fork-mashed sweet potato and egg + peanut banana + yogurt",qty:"3–4 tbsp",
+       recipe:"Thaw sweet potato cube — <strong>fork only, no blender.</strong> Obvious lumps throughout. Mash a <strong>cooked egg yolk</strong> in (egg ✓). Knob of butter, <strong>¼ tsp marrow butter</strong>.<br><br>Thinned <strong>peanut butter</strong> into banana alongside (peanut ✓ — <strong>#2 this week</strong>). <strong>Yogurt</strong> on the side (dairy ✓). He is almost 9 months — this texture is correct.",
+       storage:"Frozen sweet potato. Marrow jar. Fresh egg + banana. Fridge yogurt."},
+      {time:"Dinner · 5:30pm",name:"Beef + beet",qty:"2 tbsp",
+       recipe:"Dark, rich, iron-dense.",
+       storage:"Frozen cubes."}
+    ]},
+    {id:"w8d5",day:"Day 54 · Friday June 13",label:"Egg + soy + family dinner",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Scrambled egg + yogurt with tofu blended in",qty:"½ egg + yogurt bowl",
+       recipe:"<strong>Scrambled egg</strong> (egg ✓). <strong>Yogurt</strong> bowl with 1 tsp <strong>silken tofu</strong> blended smooth (soy ✓, dairy ✓). Mashed banana. Open cup of water at the table.",
+       storage:"Fresh egg. Fridge yogurt. Tofu: use remaining within 2 days."},
+      {time:"Family dinner",name:"Whatever is on the table tonight",qty:"2–3 tbsp",
+       recipe:"Whatever you're having. He has a high chair. He sits with you. <strong>Grilled fish</strong> — flake with butter. <strong>Roast chicken</strong> — fork-mash a thigh with pan juices. <strong>Lamb stew</strong> — mash a portion roughly. <strong>Pasta</strong> — soft pieces in sauce. He does not need a separate baby meal. He needs a version of what you're eating.",
+       storage:"From family meal."}
+    ]},
+    {id:"w8d6",day:"Day 55 · Saturday June 14",label:"Egg + pâté + peanut #3 + wheat + shellfish dinner",newFood:false,allergen:null,meals:[
+      {time:"Mid-morning · 9–10am",name:"Chicken liver pâté on sourdough + yogurt peanut banana + scrambled egg",qty:"3–4 tbsp",
+       recipe:"Pâté on broth-soaked <strong>sourdough strip</strong> — wheat ✓, iron from liver, fat from butter. <strong>Scrambled egg</strong> alongside (egg ✓). <strong>Yogurt</strong> with thinned <strong>peanut butter</strong> and banana (dairy ✓, peanut ✓ — <strong>#3 this week. Weekly minimum met.</strong>).",
+       storage:"Pâté from fridge or freezer (thaw overnight). Fresh egg. Fridge yogurt."},
+      {time:"Dinner · 5:30pm",name:"Prawn + squash",qty:"2 tbsp",
+       recipe:"Shellfish maintained ✓.",
+       storage:"Fresh prawn. Frozen squash."}
+    ]},
+    {id:"w8d7",day:"Day 56 · Sunday June 15",label:"8 weeks complete",newFood:false,allergen:null,meals:[
+      {time:"Morning + dinner",name:"Raphaël's greatest hits",qty:"Up to ½ cup total across both meals",
+       recipe:"<strong>Morning:</strong> scrambled egg (egg ✓) into sweet potato with marrow butter. <strong>Yogurt</strong> bowl with thinned <strong>peanut butter</strong> and thinned <strong>almond butter</strong> (dairy ✓, tree nut ✓). <strong>Tahini</strong> drizzled over (sesame ✓). Finger food on tray.<br><br><strong>Dinner:</strong> Salmon + lentil (fish ✓). A few drops of soy sauce in the lentil if you have it (soy ✓).<br><br>All 9 major allergens introduced and confirmed. Every one maintained in this single week. Two dozen foods in regular rotation. Diverse spices from Casablanca, Beirut, and Paris. Two meals every day without exception.<br><br><strong>From here:</strong> keep all 9 allergens in weekly rotation — a gap of more than 2 weeks risks losing tolerance. Move toward 3 meals by month 9. Let textures get chunkier every week. Trust his gag reflex. Trust him. Trust yourselves.<br><br><em>Bon appétit, Raphaël.</em>",
        storage:"Frozen cubes + fresh as needed."}
     ]},
   ]},
 ];
 
 const ALLERGENS=[
-  {name:"Egg",week:"Week 1 (yolk) · Week 2 (whole egg)",priority:"high",how:"Soft scrambled egg or cooked yolk. Start with yolk only. Move to whole egg 3–4 days later. Watch 2 hours.",maintain:"At least 3× per week once confirmed safe."},
-  {name:"Peanut",week:"Week 3",priority:"high",how:"Smooth peanut butter thinned completely with warm water or breast milk to a pourable consistency. Never thick paste. Never whole nuts.",maintain:"3× per week minimum. Critical — tolerance requires ongoing exposure."},
-  {name:"Tree nuts",week:"Week 4 (almond first)",priority:"high",how:"Smooth almond butter thinned same way as peanut. Introduce each type separately if desired.",maintain:"Weekly. Mix into yogurt, banana, or purées."},
-  {name:"Sesame",week:"Week 4",priority:"med",how:"Tahini stirred into sweet potato or carrot. Already smooth — easiest delivery method.",maintain:"Weekly via tahini. Later via hummus once wheat confirmed."},
-  {name:"Fish",week:"Week 3 (sardine) · Week 5 (salmon)",priority:"high",how:"Sardines mashed from can. Salmon poached and blended smooth. Mix into familiar purée.",maintain:"2× per week — also essential for omega-3s."},
-  {name:"Shellfish",week:"Week 7",priority:"high",how:"Prawn cooked and blended completely smooth. Mix into carrot or sweet potato. Watch 2 hours.",maintain:"Weekly. Shrimp, crab, and scallop all count."},
-  {name:"Dairy",week:"Week 5",priority:"high",how:"Full-fat plain yogurt at room temperature. Not straight cow's milk as a drink until 12 months. Start with 1 tsp.",maintain:"Daily — yogurt, cottage cheese, small amounts of cheese."},
-  {name:"Wheat / Gluten",week:"Week 5",priority:"high",how:"Real sourdough soaked in bone broth. Long fermentation pre-digests some gluten. Avoid crackers as first wheat exposure.",maintain:"A few times per week. Sourdough, pasta, whole grain."},
-  {name:"Soy",week:"Week 6",priority:"med",how:"Silken tofu blended smooth with broth. Or a few drops of low-sodium soy sauce in a purée.",maintain:"Weekly. Lowest priority of the 9."},
+  {name:"Egg",week:"Confirmed safe — before Week 1",done:true,priority:"high",
+   how:"Egg yolk introduced first (highly digestible, high heme iron). Whole scrambled egg confirmed safe on Sunday April 19. Both forms now safe and in regular rotation.",
+   maintain:"Daily or near-daily. Egg yolk into any purée, whole scrambled egg as a morning staple, yolk mashed into avocado. One of the most nutritionally complete foods in the rotation."},
+  {name:"Peanut",week:"Week 1 · Tuesday April 22",priority:"high",
+   how:"Smooth, natural peanut butter (just peanuts, no salt or sugar) thinned completely with warm water to a pourable consistency — it must pour off a spoon. Never serve as a paste. Start with ¼ tsp thinned. Serve alone first, observe, then mix into banana if preferred.",
+   maintain:"Minimum 3× per week, every week, without gaps. The LEAP trial is definitive: sustained tolerance requires ongoing regular exposure. A week without peanut risks losing what was built. Easiest maintenance: thinned PB into yogurt or banana at breakfast."},
+  {name:"Tree nuts",week:"Week 3 · Monday May 5 (almond first)",priority:"high",
+   how:"Smooth almond butter thinned exactly as peanut — pourable consistency, never paste. Introduce each nut type separately if you wish to test individual reactions, though cross-reactivity between tree nuts is common.",
+   maintain:"Weekly. Mix thinned almond butter into yogurt bowls, banana, or alongside peanut butter. Once confirmed, cashew and other nut butters can be added without individual allergen watches."},
+  {name:"Sesame",week:"Week 3 · Tuesday May 6",priority:"med",
+   how:"Tahini (sesame paste) stirred into sweet potato, carrot, or yogurt. Already perfectly smooth — no preparation needed. Stir the jar well first. ¼ tsp is sufficient for introduction.",
+   maintain:"Weekly via tahini into yogurt, purées, or banana. Later as hummus (chickpea + tahini) once wheat is confirmed. One of the easiest allergens to maintain in regular rotation."},
+  {name:"Fish",week:"Week 2 (sardine Apr 28) · Week 5 (salmon May 19)",priority:"high",
+   how:"Sardine: mashed from can with butter and lemon, mixed into sweet potato. Salmon: simmered gently 8–10 min, bones removed, blended smooth with butter. Each species introduced separately — sardine and salmon are sufficiently different to warrant individual watches.",
+   maintain:"2× per week — also essential for DHA omega-3s. Sardine and salmon alternating is ideal. Oily fish is a non-negotiable cornerstone of ancestral infant nutrition."},
+  {name:"Shellfish",week:"Week 5 · Friday May 23",priority:"high",
+   how:"Raw prawns peeled, deveined, boiled 2–3 min until pink, blended completely smooth with butter. No texture. Mixed into sweet potato or carrot. Not pre-cooked packaged prawns — too much added sodium.",
+   maintain:"Weekly. Prawn, shrimp, crab, and scallop all count. Shellfish reactions can be significant — if any future reaction is suspected, do not retry without medical guidance."},
+  {name:"Dairy",week:"Week 4 · Monday May 12",priority:"high",
+   how:"Full-fat plain yogurt at room temperature (not cold from fridge). No flavour, no sugar. Start with 1 tsp. Do not use straight cow's milk as a drink until 12 months — yogurt and cheese are fine as of this introduction.",
+   maintain:"Daily. Yogurt is the easiest: morning bowl base every day. Cottage cheese, grated cheddar, and cream cheese all count once yogurt is confirmed."},
+  {name:"Wheat / Gluten",week:"Week 4 · Wednesday May 14",priority:"high",
+   how:"Real sourdough (long-fermented, minimum 8–12 hours) torn and soaked in warm bone broth until completely soft. Long fermentation pre-digests some gluten. Not crackers, not rice cereal, not commercial bread as first wheat.",
+   maintain:"A few times per week. Sourdough strips in broth as finger food, pasta in family meals, whole grain additions. Once confirmed, wheat is free."},
+  {name:"Soy",week:"Week 6 · Monday May 26",priority:"med",
+   how:"Soft or silken tofu mashed smooth with bone broth. Or a few drops of low-sodium soy sauce stirred into a familiar purée. Watch 2 hours as usual.",
+   maintain:"Weekly — the lowest-maintenance of the 9. A small amount of silken tofu blended into a yogurt bowl is the easiest method. Soy sauce in family cooking also counts once he's at the family table."},
 ];
 
 const STORAGE=[
   {icon:"🧊",title:"The ice cube tray system",items:[
-    "<strong>Standard silicone ice cube tray = ~1 tbsp per cube.</strong> This is your primary unit.",
-    "Once frozen solid (4–6 hrs), transfer cubes to labelled ziplock bags — food name + date frozen.",
-    "6 months: 1 cube per serving. By 8–9 months: 2–3 cubes per meal.",
-    "Mix freely. Beef cube + carrot cube thawed together = complete meal in 3 minutes.",
+    "<strong>Standard silicone ice cube tray ≈ 1 tbsp per cube.</strong> This is your primary unit of measurement.",
+    "<strong>Serving guide by age:</strong> 6–7 months: 1–2 cubes per meal. 8–9 months: 2–4 cubes. 10–12 months: 4–6 cubes. Adjust to appetite — these are starting points.",
+    "Freeze solid 4–6 hours, then transfer to labelled ziplock bags. One bag per food, food name and date on every bag.",
+    "Mix freely. Beef cube + carrot cube + ¼ tsp marrow butter = complete, nutrient-dense meal in under 4 minutes.",
+    "Keep older bags at the front of the freezer — first in, first out. Check stocks on Sunday and batch-cook anything running low.",
+  ]},
+  {icon:"🍳",title:"How to cook each staple",items:[
+    "<strong>Sweet potato:</strong> Halve lengthwise. Brush cut side generously with butter. Place cut-side down on baking tray. Roast at 400°F / 200°C for 35–40 min until completely soft (poke with a skewer — no resistance). Scoop flesh, blend with 1 tbsp butter and enough broth to reach yogurt consistency. Makes ≈8 cubes per small potato.",
+    "<strong>Carrot:</strong> Peel and chop into chunks. Toss in ghee or butter. Roast at 400°F for 25–30 min until very soft and beginning to caramelise. Blend with broth. Or steam 15 min in covered pan with 1 inch water. Makes ≈6 cubes per 4 medium carrots.",
+    "<strong>Butternut squash:</strong> Peel, cube, toss in coconut oil. Roast at 400°F for 30–35 min. Blend with a tiny scrape of fresh ginger and broth. Makes ≈10 cubes per quarter squash.",
+    "<strong>Parsnip:</strong> Peel and cube. Toss in butter. Roast at 400°F for 30 min. Blend with broth. Pinch of cinnamon after blending. Sweeter than carrot — usually immediately popular.",
+    "<strong>Beet:</strong> Wrap whole, unpeeled beet in foil with a knob of butter. Roast at 400°F for 50–75 min depending on size (skewer test). Open foil carefully (hot steam). Peel warm — skin slides off. Blend with collected juices and broth. Stains everything — use a dedicated blender or be ready.",
+    "<strong>Beef or lamb:</strong> Fatty cut (short rib, chuck, lamb shoulder). No salt. Cover completely with bone broth in a slow cooker or heavy pot. Slow cooker: low 6–8 hours. Oven: 275°F / 135°C for 4 hours covered. Meat should fall apart with no effort. Blend with cooking liquid — keep the fat. One short rib makes 12–15 cubes.",
+    "<strong>Chicken thigh:</strong> Bone-in thigh. Place in pot, cover with cold water and a bay leaf. Bring to a gentle simmer, cook 25–30 min. Do not boil — meat toughens. Remove skin and bone, blend meat with cooking broth. One thigh makes 6–8 cubes.",
+    "<strong>Chicken or beef liver:</strong> Rinse, pat dry, remove any green-tinged spots. Sauté in butter on medium-low heat, 3–4 min per side until just cooked (a little pink inside is fine — overcooking makes it harsh). Blend with a splash of broth until completely silky. Freeze in ½-tsp dots on a silicone mat, then bag. <em>Pâté version:</em> add a pinch of thyme while sautéing, blend with cooking butter plus 1 extra tbsp soft butter.",
+    "<strong>Red lentils:</strong> Rinse ¼ cup. Combine with ¾ cup broth and a pinch of cumin in a small pot. Simmer uncovered 15–20 min, stirring occasionally, until completely dissolved. No soaking needed. Blend smooth. Stir in generous knob of butter. Makes ≈4 cubes per batch.",
+    "<strong>Bone broth:</strong> Cover bones (beef knuckle, chicken carcass, or a mix) with cold water. Add 1 tbsp apple cider vinegar — helps draw minerals from the bones. Slow cook 12–24 hours on the lowest heat. Strain completely. Freeze in standard ice cube trays — add directly to any purée or reheat as a warm drink.",
+    "<strong>Whipped bone marrow butter:</strong> Ask your butcher for split marrow bones (cut lengthwise). Roast at 450°F / 230°C for 15–20 min until marrow is wobbly. Scoop warm marrow into a bowl. Add equal weight of soft unsalted butter (e.g. 30g marrow + 30g butter). Whip together with a fork or hand mixer until smooth and spreadable. Transfer to a small jar. Add ¼ tsp to any purée at any time — it melts in silently and transforms the nutrient density without changing the flavour noticeably.",
+    "<strong>Sardines:</strong> Open tin, drain or rinse well if in brine. Remove any larger bones visible. Fork-mash with ½ tsp butter and a tiny squeeze of lemon. Use immediately or refrigerate up to 24 hours. Do not freeze opened tinned fish.",
+    "<strong>Salmon:</strong> Small piece (wild preferred). Simmer in water or broth on gentle heat 8–10 min until just opaque throughout. Remove skin, run finger along flesh to find and remove any bones. Blend with 1 tsp butter and a splash of broth. Use within 24 hours or freeze up to 1 month.",
   ]},
   {icon:"📅",title:"Freezer life by food",items:[
-    "<strong>Vegetable purées</strong> (sweet potato, carrot, squash, beet, parsnip): 3 months",
-    "<strong>Meat purées</strong> (beef, lamb, chicken): 3 months",
-    "<strong>Liver / pâté:</strong> 2 months",
-    "<strong>Fish</strong> (salmon): 1 month",
-    "<strong>Bone broth:</strong> 3 months",
-    "<strong>Fruit purées</strong> (pear, mango): 2 months",
-    "<strong>Do not freeze:</strong> yogurt, cottage cheese, avocado, banana, opened canned fish",
+    "<strong>Vegetable purées</strong> (sweet potato, carrot, squash, beet, parsnip): <strong>3 months</strong>",
+    "<strong>Meat purées</strong> (beef, lamb, chicken thigh): <strong>3 months</strong>",
+    "<strong>Liver purée / pâté:</strong> <strong>2 months</strong>",
+    "<strong>Salmon:</strong> <strong>1 month</strong>",
+    "<strong>Bone broth:</strong> <strong>3 months</strong>",
+    "<strong>Red lentils:</strong> <strong>3 months</strong>",
+    "<strong>Fruit purées</strong> (pear, mango): <strong>2 months</strong>",
+    "<strong>Whipped marrow butter:</strong> <strong>2 months</strong> (frozen dots)",
+    "<strong>Cauliflower cheddar:</strong> <strong>3 months</strong>",
+    "<strong>Blanched green beans:</strong> fridge only, <strong>2 days max</strong>",
+    "<strong>Do not freeze:</strong> yogurt, cottage cheese, avocado, banana, fresh mango, papaya, opened tinned sardines, silken tofu, raw prawn purée",
   ]},
-  {icon:"🌡️",title:"Thawing safely",items:[
-    "<strong>Best:</strong> Move cubes from freezer to fridge the night before.",
-    "<strong>Fast:</strong> Sealed bag in a bowl of warm water for 15–20 minutes.",
-    "Never microwave directly — hot spots. If you must, stir thoroughly and test on your inner wrist.",
-    "Reheat in a small pot on low, stirring constantly.",
-    "Once thawed: use within 48 hours. Never refreeze.",
+  {icon:"🌡️",title:"Reheating from frozen",items:[
+    "<strong>Best method (plan ahead):</strong> Move cubes from freezer to fridge the night before. Next morning they're thawed, cold, and safe. Reheat in a small saucepan on the lowest heat with a tiny splash of broth or water, stirring constantly for 2–3 min. Test temperature on your inner wrist before every single serving — it should feel neutral, not warm.",
+    "<strong>Fast method:</strong> Place bag of frozen cubes (still sealed) in a bowl of warm — not boiling — water for 15–20 min. Once thawed, finish reheating in a small pan on low.",
+    "<strong>Microwave (last resort only):</strong> Place in a microwave-safe bowl. Heat in 10–15 second bursts, stirring thoroughly between each burst. Hot spots form invisibly and can burn his mouth. Always stir completely and test on your wrist before serving. Never microwave fish.",
+    "<strong>Vegetable purées</strong> (sweet potato, carrot, squash, beet, parsnip): Stovetop on low with ½ tsp broth. Stir constantly 2–3 min. Add butter at the end — it smooths out any texture change from freezing.",
+    "<strong>Meat purées</strong> (beef, lamb, chicken): Thaw first, then warm on low 3–4 min. Add a splash of broth if thick. Never boil — boiling toughens meat protein and changes the flavour significantly.",
+    "<strong>Liver purée and pâté:</strong> Do not heat aggressively. Thaw overnight in fridge, serve at just above room temperature. Or drop a frozen ½-tsp dot into any hot purée and stir — it warms through instantly without overcooking.",
+    "<strong>Salmon:</strong> Most delicate. Thaw in fridge. Warm in a pan on the absolute lowest heat setting with ½ tsp butter, 1–2 min only. Or stir a small cold thawed portion into a warm purée and mix — residual heat is sufficient. Never microwave salmon.",
+    "<strong>Lentils:</strong> Thicken significantly when frozen. Add a generous splash of broth when reheating and stir well. 3–4 min on low.",
+    "<strong>Bone broth:</strong> Reheat in small pan until steaming. Never boil — degrades the mineral content and changes the flavour.",
+    "<strong>Whipped marrow butter:</strong> No reheating needed. Drop a frozen dot directly into any warm purée and stir — it melts within 30 seconds. Or move jar from freezer to fridge 30 min before use.",
+    "<strong>Never:</strong> Reheat the same portion twice. Once thawed and reheated, use within 2 hours or discard. Never refreeze food that has been thawed.",
   ]},
   {icon:"⏱️",title:"Batch cooking rhythm",items:[
-    "One day per week — Sunday works well. Make 3–4 things in parallel.",
-    "Roast vegetables while slow-cooking meat while simmering broth. One 2-hour session = 2–3 weeks of cubes.",
-    "<strong>Best batch items:</strong> beef/lamb purée, sweet potato, carrot, squash, lentils, chicken thigh, broth.",
-    "<strong>Always fresh:</strong> banana, avocado, egg, yogurt. Under 2 minutes each.",
+    "<strong>One session per week — Sunday works well.</strong> Make 3–4 things in parallel. One 2-hour session = 2–3 weeks of cubes.",
+    "<strong>Sample Sunday session:</strong> Start the slow cooker with beef or lamb + broth (6–8 hrs, mostly hands-off). Put sweet potato and beet in the oven at 400°F (40–60 min). Simmer a pot of lentils (20 min, low attention). In the last 20 min, roast marrow bones at 450°F. Everything finishes in the same window — while bones are roasting, blend and cube the lentils and vegetables.",
+    "While things cook: sort older cubes in freezer to the front, rinse and refill empty bags, check your list of what's running low.",
+    "<strong>Always fresh (5 min or less, never batch):</strong> banana, avocado, egg, yogurt, cottage cheese, fresh sardines, prawn. These need no advance preparation.",
+    "Keep a note on the fridge or in your phone of what's in the freezer. Update it after every batch session and after every week of use. 10 seconds now saves 10 minutes of freezer archaeology later.",
   ]},
   {icon:"🏷️",title:"Labelling",items:[
-    "Masking tape + marker: food name + date frozen on every bag.",
-    "Older cubes to the front — first in, first out.",
-    "Keep a small list on the fridge of what's in the freezer.",
+    "Masking tape and a marker on every bag: food name + date frozen. Nothing else is needed.",
+    "Older bags to the front of the freezer — first in, first out, always.",
+    "If you open the freezer and cannot immediately identify something, it goes. Unlabelled mystery cubes are a hazard, not a resource.",
+    "When a bag is finished: note it on your fridge list as something to make next Sunday.",
   ]},
 ];
 
 // ── INIT ──
 (async () => {
-  // Restore user from localStorage
   const savedUser = localStorage.getItem('raphael_user');
   if (savedUser && USERS[savedUser]) {
     currentUser = savedUser;
